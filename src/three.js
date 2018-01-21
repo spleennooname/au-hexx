@@ -1,5 +1,6 @@
 import Vue from 'vue'
-import App from './components/SQRApp.vue'
+import THREE from 'three'
+import App from './components/THREEApp.vue'
 
 new Vue({
   el: '#app',

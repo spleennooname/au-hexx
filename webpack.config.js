@@ -4,12 +4,15 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 module.exports = {
+  
   entry: "./src/sqr.js",
+
   output: {
     path: path.resolve(__dirname, "./dist"),
     publicPath: "/dist/",
     filename: "build.js"
   },
+
   module: {
     rules: [
       {
@@ -65,7 +68,7 @@ module.exports = {
     alias: {
       vue$: "vue/dist/vue.runtime.js",
       pixi: "pixi.js/dist/pixi.js",
-      sqr: "./sqr/sqr.min.js"
+      three: "three/build/three.min.js"
     },
     extensions: ["*", ".js", ".vue", ".json"]
   },
@@ -80,7 +83,7 @@ module.exports = {
     hints: false
   },
   
-  devtool: "#eval-source-map"
+  //devtool: "#eval-source-map"
 };
 
 module.exports.plugins = [
@@ -93,7 +96,6 @@ module.exports.plugins = [
 ];
 
 if (process.env.NODE_ENV === 'production') {
-  
 
   // http://vue-loader.vuejs.org/en/workflow/production.html
   module.exports.plugins = (module.exports.plugins || []).concat([
@@ -121,5 +123,6 @@ if (process.env.NODE_ENV === 'production') {
     new webpack.LoaderOptionsPlugin({
       minimize: true
     })
+
   ])
 }

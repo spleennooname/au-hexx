@@ -1,42 +1,9 @@
-//#vertex
-#ifdef GL_ES
-precision mediump float;
-#endif
-
-attribute vec3 aPosition;
-attribute vec2 aUV;
-
-uniform mat4 uMatrix;
-uniform mat4 uViewMatrix;
-uniform mat4 uProjection;
-uniform mat3 uNormalMatrix;
-
-varying vec2 vUV;
-     
-void main() {
-	vUV = aUV;
-	gl_Position = uProjection * uViewMatrix * vec4(aPosition, 1.0);
-}
-
-//#fragment
-#ifdef GL_ES
-precision mediump float;
-#endif
-               
-uniform float uTime;
-uniform vec2 iResolution;
-
-varying vec2 vUV;
-
-// fx 
-
+float time;
+vec2 size;
 #define PI 3.141592653589
-#define tick() ( uTime * 0.001 )
-#define COLOR_GLOW vec3(1.0, 0.4, 0.4)
-#define LOOK_AT vec3(0., 0., 0.)
-#define UP vec3(0.,0., .5)
 
-struct Ray {
+struct Ray
+{
 	vec3 org;
 	vec3 dir;
 };
@@ -73,66 +40,46 @@ vec3 hsv2rgb(vec3 c)
 }
 
 vec3 grid(vec3 dir, bool vert){
-    
     vec2 p = dir.xy / max(0.001, abs(dir.z));
-    
     p *= 3.;
-    
-    float time = uTime * 0.001;
-
-    p.y *= 0.1;
-    p.y += time * 10.3;
-
+    p.y *= 0.06;
+    p.y += time * 20.3;
     vert = hash(floor(p.y/5. + 0.5)) < 0.5 ? vert : !vert;
     p += 0.5;
-    
     float h = hash(floor(p*sign(dir.z)));
     float h2 = hash(floor(p.y/6.));
     float h3 = hash(floor(p.y/20.)+sign(dir.z));
-
-    float band = abs(p.x) < 2. + floor(10.*h3*h3) ? 1. : 0.;
-    
+    float band = abs(p.x) < 2. + floor(30.*h3*h3) ? 1. : 0.;
     p = mod(p, vec2(1.));
     p -= 0.5;
-
     float f = h2 < 0.5 ? smoothstep(0.6, 0.0,length(p))*6. : 2.;
-    
     h = h < h2/1.2 + 0.1 && vert ? 1. : 0.;
-    
-    vec3 acc = hsv2rgb( vec3( 1., h2/5. + time/20.,  1.) ) * h * band * 1. * f;
-    //vec3 acc = vec3( time/10., time/20., 1.) * h * band *3. * f; 
-    
-    return acc;// * pow( abs(dir.z), .25);
+    vec3 acc = hsv2rgb(vec3(h2/5.+time/30.,.9,0.9))*h*band*3.*f;
+    return acc*pow(abs(dir.z),.5);
 }
 
 vec3 background(vec3 dir){
-  return 1.0 *( grid(dir.xyz, true) + grid(dir.yxz, true) );
+    return grid(dir.zxy, true) + grid(dir.yxz, false);
 }
 
 float box(vec3 p, vec3 w){
     p = abs(p);
-    return max(p.x-w.x, max( 1.0*p.y-w.x*1., p.z-w.z ) );
+    return max(p.x-w.x, max(p.y-w.y, p.z-w.z));
 }
 
-// float box(vec3 p, vec3 w){
-//     p = abs(p);
-//     return max(p.x-w.x, max(p.y-w.y, min(p.z-w.z, p.x) ) );
-// }
-
 float map(vec3 p){
-    float time = uTime * 0.005;
     for (int i = 0; i < 3; i++){
         p = abs(p*rotation + vec3(0.1, .0, .0));
         p.x -= (sin(time/8.) + 1.)/2.;
         p.y -= (sin(time/7.) + 1.)/3.;
         p.z -= (sin(time/3.) + 1.)/4.;
     }
-    return box(p, vec3(1.8, 10.4, 0.2) );
+    return box(p, vec3(0.8, 4.4, 0.4));
 }
 
 vec3 normal(vec3 pos)
 {
-	vec3 eps = vec3( 0.002, 0.0, 0.0 );
+	vec3 eps = vec3( 0.001, 0.0, 0.0 );
 	vec3 nor = vec3(map(pos+eps.xyy) - map(pos-eps.xyy),
                     map(pos+eps.yxy) - map(pos-eps.yxy),
                     map(pos+eps.yyx) - map(pos-eps.yyx) );
@@ -144,7 +91,7 @@ vec3 selfReflect(Ray ray){
     vec3 pos;
     float minDist = 1000.;
     float curMap;
-    for (int i = 0; i < 20; i++){
+    for (int i = 0; i < 30; i++){
         pos = ray.org + dist*ray.dir;
         curMap = map(pos);
         dist+=curMap;
@@ -157,88 +104,69 @@ vec3 selfReflect(Ray ray){
         vec3 n = normal(pos);
         vec3 r = reflect(ray.dir, n);
         vec3 refl = background(r);
-        float rf = 0.8 - abs(dot(ray.dir, n)) * .4;
+        float rf = 0.8-abs(dot(ray.dir, n))*.4;
         rf *= rf;
         return refl*rf*1.3; 
     }
-    float glow = 0.04/minDist;
+    float glow = 0.02/minDist;
 
-    return background(ray.dir)*0.5 + glow * COLOR_GLOW;
-}
-
-
-
-Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspect){
-	Ray ray;
-	ray.org = center;
-
-	vec3 dir = normalize(lookAt - center);
-	up = normalize(up - dir*dot(dir,up));
-	
-  vec3 right = cross(dir, up);
-	uv = 2.*uv - vec2(1.);
-	
-  fov = fov * PI / 180.;
-	ray.dir = dir + tan(fov/2.) * right * uv.x + tan(fov/2.) / aspect * up * uv.y;
-	ray.dir = normalize(ray.dir);	
-	
-  return ray;
+    return background(ray.dir)*0.5 + glow * vec3(1.9, 2.4, 3.2);
 }
 
 vec3 render(Ray ray){
-
     float dist = 0.;
-    
     vec3 pos;
     float minDist = 1000.;
     float curMap;
-
-    for (int i = 0; i < 30; i++){
+    for (int i = 0; i < 40; i++){
         pos = ray.org + dist*ray.dir;
         curMap = map(pos);
         dist+=curMap;
         minDist = min(minDist,curMap);
     }
-    
     float m = map(pos);
-    
     if (m < 0.01){
         vec3 n = normal(pos);
         vec3 r = reflect(ray.dir, n);
         vec3 refl = selfReflect(Ray(pos, r));
         float rf = 0.8-abs(dot(ray.dir, n))*.4;
         rf *= rf;
-        return refl*rf*1.5; 
+        return refl*rf*1.3; 
     }
+    float glow = 0.02/minDist;
 
-    float glow = 0.03/minDist;
-
-    return background(ray.dir)*0.5 + glow * COLOR_GLOW;
+    return background(ray.dir)*0.5 + glow * vec3(1.9, 2.4, 3.2);
 }
-// main
-           
-void main() {
-  
-    vec2 uv = vUV;
-    float time = uTime * 0.0007;
 
-    // vec2 size = iResolution;
-    vec2 p = uv;
-  
-    vec3 cameraPos = vec3(-8.,2.*sin(time/10.),-4.*sin(time/4.));
+Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspect)
+{
+	Ray ray;
+	ray.org = center;
+	vec3 dir = normalize(lookAt - center);
+	up = normalize(up - dir*dot(dir,up));
+	vec3 right = cross(dir, up);
+	uv = 2.*uv - vec2(1.);
+	fov = fov * 3.1415/180.;
+	ray.dir = dir + tan(fov/2.) * right * uv.x + tan(fov/2.) / aspect * up * uv.y;
+	ray.dir = normalize(ray.dir);	
+	return ray;
+}
 
-    //float aspect = size.x/size.y;
-
-    float xt = floor(time/8.) + clamp(fract(time/2.)*20.,0.,1.);
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    size.xy = iResolution.xy;
+    time = iTime;
+    vec2 p = fragCoord / size;
+	vec3 cameraPos = vec3(-8.,2.*sin(time/10.),-4.*sin(time/4.));
+	vec3 lookAt = vec3(0.);
+	vec3 up = vec3(0.,0.,1.);
+	float aspect = size.x/size.y;
+    float xt = floor(time/8.) + clamp(fract(time/8.)*20.,0.,1.);
     float yt = floor(time/2.) + clamp(fract(time/2.)*5.,0.,1.);
-    
     rotation = rotateX(xt*PI/4.)*rotateY(yt*PI/2.);
-	
-    Ray ray = createRay(cameraPos, LOOK_AT, UP, p, 100., (iResolution.x/ iResolution.y));
-
+	Ray ray = createRay(cameraPos, lookAt, up, p, 90., aspect);
     vec3 col = render(ray);
-
-    col = pow(col, vec3(1.5));
-
-    gl_FragColor = vec4(col, 0.45);
+    col = clamp(col, 0., 1.);
+    fragColor = vec4(col, 1.);
 }
+

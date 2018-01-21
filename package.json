@@ -13,6 +13,7 @@
   "dependencies": {
     "pixi.js": "^4.6.2",
     "soundcloud-badge": "^1.1.0",
+    "three": "^0.89.0",
     "vue": "^2.5.11"
   },
   "browserslist": [
