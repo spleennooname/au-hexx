@@ -99,19 +99,19 @@ vec3 grid(vec3 dir, bool vert){
     
     h = h < h2/1.2 + 0.1 && vert ? 1. : 0.;
     
-    vec3 acc = hsv2rgb( vec3( 1., h2/5. + time/20.,  1.) ) * h * band * 1. * f;
+    vec3 acc = hsv2rgb( vec3( 1., h2/10. + time/20.,  1.) ) * h * band * 1. * f;
     //vec3 acc = vec3( time/10., time/20., 1.) * h * band *3. * f; 
     
-    return acc;// * pow( abs(dir.z), .25);
+    return acc * pow( abs(dir.z), .25);
 }
 
 vec3 background(vec3 dir){
-  return 1.0 *( grid(dir.xyz, true) + grid(dir.yxz, true) );
+  return 0.75 *( grid(dir.xyz, true) + grid(dir.yxz, true) );
 }
 
 float box(vec3 p, vec3 w){
     p = abs(p);
-    return max(p.x-w.x, max( 1.0*p.y-w.x*1., p.z-w.z ) );
+    return max( p.x-w.x, max( 1.0*p.y-w.x*.5, p.z-w.z ) );
 }
 
 // float box(vec3 p, vec3 w){
@@ -122,7 +122,7 @@ float box(vec3 p, vec3 w){
 float map(vec3 p){
     float time = uTime * 0.005;
     for (int i = 0; i < 3; i++){
-        p = abs(p*rotation + vec3(0.1, .0, .0));
+        p = abs(p*rotation + vec3(0.5, .0, .0));
         p.x -= (sin(time/8.) + 1.)/2.;
         p.y -= (sin(time/7.) + 1.)/3.;
         p.z -= (sin(time/3.) + 1.)/4.;
