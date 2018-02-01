@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import App from './components/SQRApp.vue'
+import App from './components/MonolithSQRApp.vue'
 
 new Vue({
   el: '#app',

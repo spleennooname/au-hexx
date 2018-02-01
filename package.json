@@ -11,6 +11,8 @@
     "deploy": "surge dist 111993.surge.sh"
   },
   "dependencies": {
+    "create-react-app": "^1.5.1",
+    "global": "^4.3.2",
     "pixi.js": "^4.6.2",
     "soundcloud-badge": "^1.1.0",
     "three": "^0.89.0",

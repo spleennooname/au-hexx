@@ -1,7 +1,6 @@
 //#vertex
-#ifdef GL_ES
-precision mediump float;
-#endif
+
+precision highp float;
 
 attribute vec3 aPosition;
 attribute vec2 aUV;
@@ -19,9 +18,9 @@ void main() {
 }
 
 //#fragment
-#ifdef GL_ES
-precision mediump float;
-#endif
+
+precision highp float;
+precision mediump int;
                
 uniform float uTime;
 uniform vec2 iResolution;
@@ -35,11 +34,14 @@ varying vec2 vUV;
 #define COLOR_GLOW vec3(1.0, 0.4, 0.4)
 #define LOOK_AT vec3(0., 0., 0.)
 #define UP vec3(0.,0., .5)
+#define BACKGROUND 0.25
 
 struct Ray {
 	vec3 org;
 	vec3 dir;
 };
+
+mat3 rotation;
 
 mat3 rotateX(float a){
     return mat3(1.,0.,0.,
@@ -53,16 +55,14 @@ mat3 rotateY(float a){
                 sin(a), 0., cos(a));
 }
 
-mat3 rotation;
-
 float hash(float f)
 {
-    return fract(sin(f*32.34182) * 43758.5453);
+    return fract(sin(f*32.34182) * 43758.5400);
 }
 
 float hash(vec2 p)
 {
-    return fract(sin(dot(p.xy ,vec2(12.9898,78.233))) * 43758.5453);
+    return fract(sin(dot(p.xy , vec2(12.9898,78.233))) * 43758.5453);
 }
 
 vec3 hsv2rgb(vec3 c)
@@ -74,9 +74,9 @@ vec3 hsv2rgb(vec3 c)
 
 vec3 grid(vec3 dir, bool vert){
     
-    vec2 p = dir.xy / max(0.001, abs(dir.z));
+    vec2 p = dir.xy / max(0.001, abs(dir.z) );
     
-    p *= 3.;
+    p *= 2.;
     
     float time = uTime * 0.001;
 
@@ -87,8 +87,9 @@ vec3 grid(vec3 dir, bool vert){
     p += 0.5;
     
     float h = hash(floor(p*sign(dir.z)));
-    float h2 = hash(floor(p.y/6.));
-    float h3 = hash(floor(p.y/20.)+sign(dir.z));
+
+    float h2 = hash( floor(p.y/6.) );
+    float h3 = hash( floor(p.y/20.) + sign(dir.z)) ;
 
     float band = abs(p.x) < 2. + floor(10.*h3*h3) ? 1. : 0.;
     
@@ -103,31 +104,65 @@ vec3 grid(vec3 dir, bool vert){
     //vec3 acc = vec3( time/10., time/20., 1.) * h * band *3. * f; 
     
     return acc * pow( abs(dir.z), .25);
+
 }
 
 vec3 background(vec3 dir){
-  return 0.75 *( grid(dir.xyz, true) + grid(dir.yxz, true) );
+  return BACKGROUND * ( grid(dir.yxz, true) + grid( dir.yxz, true) );
+  //return vec3(0.);
+}
+
+//original
+// float box(vec3 p, vec3 w){
+//     p = abs(p);
+//     return max(p.x-w.x, max(p.y-w.y, p.z-w.z));
+// }
+
+// float box(vec3 p, vec3 w){
+//     p = abs(p);
+//     float box = max( p.x - w.x, max( 1.0*p.y - w.y, min(p.z - w.z, w.x ) ) );
+//     return box;
+// }
+
+float sdHexPrism( vec3 p, vec2 h )
+{
+    vec3 q = abs(p);
+    return max(q.z-h.y,max((q.x*0.866025+q.y*0.5),q.y)-h.x);
+}
+
+float udBox( vec3 p, vec3 b )
+{
+    p = abs(p);
+  return length( max( p.x - b.x*0.5, 1.5 * p.y - b.y) );
+}
+
+float sdTriPrism( vec3 p, vec2 h )
+{
+    vec3 q = abs(p);
+    return max(q.z-h.y,max(q.x*0.866025+p.y*0.5,-p.y)-h.x*0.5);
 }
 
 float box(vec3 p, vec3 w){
     p = abs(p);
-    return max( p.x-w.x, max( 1.0*p.y-w.x*.5, p.z-w.z ) );
-}
+     //return max(p.x-w.x, max(p.y-w.y, p.z-w.z ) );
+    //return max(p.x-w.x, max(p.y-w.y, min(p.x-w.x, p.y) ) );
+    return length(max(abs(p)-w,0.0));
 
-// float box(vec3 p, vec3 w){
-//     p = abs(p);
-//     return max(p.x-w.x, max(p.y-w.y, min(p.z-w.z, p.x) ) );
-// }
+}
 
 float map(vec3 p){
     float time = uTime * 0.005;
     for (int i = 0; i < 3; i++){
         p = abs(p*rotation + vec3(0.5, .0, .0));
-        p.x -= (sin(time/8.) + 1.)/2.;
-        p.y -= (sin(time/7.) + 1.)/3.;
-        p.z -= (sin(time/3.) + 1.)/4.;
+        p.x -= (sin(time/15.) + 1.)/4.;
+        p.y -= (sin(time/5.5) + 2.)/6.;
+        p.z -= (sin(time/10.) + 1.)/8.;
     }
-    return box(p, vec3(1.8, 10.4, 0.2) );
+
+    //original: vec3(0.8, 4.4, 0.4)
+   // return box(p, vec3(0.95, 5., 1.75));
+    //return udBox(p, vec3(0.95, 5., 1.75) );
+  return sdTriPrism(p, vec2(0.5, 3.5) );
 }
 
 vec3 normal(vec3 pos)
@@ -144,7 +179,7 @@ vec3 selfReflect(Ray ray){
     vec3 pos;
     float minDist = 1000.;
     float curMap;
-    for (int i = 0; i < 20; i++){
+    for (int i = 0; i < 30; i++){
         pos = ray.org + dist*ray.dir;
         curMap = map(pos);
         dist+=curMap;
@@ -169,20 +204,22 @@ vec3 selfReflect(Ray ray){
 
 
 Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspect){
+
 	Ray ray;
 	ray.org = center;
 
 	vec3 dir = normalize(lookAt - center);
 	up = normalize(up - dir*dot(dir,up));
 	
-  vec3 right = cross(dir, up);
+    vec3 right = cross(dir, up);
 	uv = 2.*uv - vec2(1.);
 	
-  fov = fov * PI / 180.;
+    fov = fov * PI / 180.;
+
 	ray.dir = dir + tan(fov/2.) * right * uv.x + tan(fov/2.) / aspect * up * uv.y;
 	ray.dir = normalize(ray.dir);	
 	
-  return ray;
+    return ray;
 }
 
 vec3 render(Ray ray){
@@ -193,7 +230,7 @@ vec3 render(Ray ray){
     float minDist = 1000.;
     float curMap;
 
-    for (int i = 0; i < 30; i++){
+    for (int i = 0; i < 40; i++){
         pos = ray.org + dist*ray.dir;
         curMap = map(pos);
         dist+=curMap;
@@ -202,7 +239,7 @@ vec3 render(Ray ray){
     
     float m = map(pos);
     
-    if (m < 0.01){
+    if (m < 0.001){
         vec3 n = normal(pos);
         vec3 r = reflect(ray.dir, n);
         vec3 refl = selfReflect(Ray(pos, r));
@@ -220,13 +257,13 @@ vec3 render(Ray ray){
 void main() {
   
     vec2 uv = vUV;
+    vec2 p = uv;
+
     float time = uTime * 0.0007;
 
     // vec2 size = iResolution;
-    vec2 p = uv;
-  
+   
     vec3 cameraPos = vec3(-8.,2.*sin(time/10.),-4.*sin(time/4.));
-
     //float aspect = size.x/size.y;
 
     float xt = floor(time/8.) + clamp(fract(time/2.)*20.,0.,1.);
@@ -234,11 +271,14 @@ void main() {
     
     rotation = rotateX(xt*PI/4.)*rotateY(yt*PI/2.);
 	
-    Ray ray = createRay(cameraPos, LOOK_AT, UP, p, 100., (iResolution.x/ iResolution.y));
+    Ray ray = createRay(cameraPos, LOOK_AT, UP, p, 100., (iResolution.x/ iResolution.y) );
 
     vec3 col = render(ray);
 
     col = pow(col, vec3(1.5));
+
+    // simple fogging funcition to darken things the further away they are
+    //col = vec3( 1.0 / (1.0 + col * col * 0.01) );
 
     gl_FragColor = vec4(col, 0.45);
 }

@@ -64,17 +64,23 @@ vec3 background(vec3 dir){
 
 float box(vec3 p, vec3 w){
     p = abs(p);
-    return max(p.x-w.x, max(p.y-w.y, p.z-w.z));
+    float dx = p.x-w.x;
+    float dy = p.y-w.y;
+    float dz = p.z-w.z;
+    float m = max(dx, max(dy, dz) );
+    return m; 
 }
 
 float map(vec3 p){
+
     for (int i = 0; i < 3; i++){
         p = abs(p*rotation + vec3(0.1, .0, .0));
         p.x -= (sin(time/8.) + 1.)/2.;
         p.y -= (sin(time/7.) + 1.)/3.;
         p.z -= (sin(time/3.) + 1.)/4.;
     }
-    return box(p, vec3(0.8, 4.4, 0.4));
+    
+    return box(p, vec3(2.8, 100.4, 0.4));
 }
 
 vec3 normal(vec3 pos)
@@ -110,7 +116,7 @@ vec3 selfReflect(Ray ray){
     }
     float glow = 0.02/minDist;
 
-    return background(ray.dir)*0.5 + glow * vec3(1.9, 2.4, 3.2);
+    return background(ray.dir)*0.25 + glow * vec3(1.9, 2.4, 3.2);
 }
 
 vec3 render(Ray ray){
@@ -118,20 +124,27 @@ vec3 render(Ray ray){
     vec3 pos;
     float minDist = 1000.;
     float curMap;
-    for (int i = 0; i < 40; i++){
+    
+    for (int i = 0; i < 35; i++){
         pos = ray.org + dist*ray.dir;
         curMap = map(pos);
         dist+=curMap;
         minDist = min(minDist,curMap);
     }
+    
     float m = map(pos);
+
     if (m < 0.01){
         vec3 n = normal(pos);
         vec3 r = reflect(ray.dir, n);
         vec3 refl = selfReflect(Ray(pos, r));
         float rf = 0.8-abs(dot(ray.dir, n))*.4;
         rf *= rf;
-        return refl*rf*1.3; 
+        
+        float flash = 1.-fract( uTime * 0.001);
+        flash = sqrt(flash) * vec3(2.9, 1.4, 1.2);
+
+        return flash + refl*rf*1.3; 
     }
     float glow = 0.02/minDist;
 
