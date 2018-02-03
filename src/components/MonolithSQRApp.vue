@@ -22,6 +22,8 @@ export default {
 
       this.scaling = 4 ;
 
+      this.fps_ms = 1000/ 60;
+
       this.renderer = SQR.Renderer("#gl", {
         antialias: false,
         preserveDrawingBuffer: false
@@ -36,7 +38,7 @@ export default {
       //camera
       this.camera = SQR.Transform();
       this.camera.position.z = 2.5;
-      this.camera.isStatic = true;
+      this.camera.isStatic = false;
 
       //root
       this.root = SQR.Transform();
@@ -50,40 +52,38 @@ export default {
           new SQR.V2(w, h)
         );
 
-      //this.shader = SQR.Shader( SQR.GLSL.normal2color ).use();
-
       this.object3d = SQR.Transform();
       this.object3d.buffer = SQR.Primitives.createPlane( 4 * aspect, 4, 1, 1, 0, 0 ).update();
-      this.object3d.rotation.x = Math.PI / 2;
+      this.object3d.rotation.x = 90 * ( Math.PI / 180 );
       this.object3d.shader = this.shader;
 
       this.root.add(this.object3d);
 
-      this.then = Date.now();
-      this.now = 0;
-
-      this.mouseX= 0;
-      this.mouseY= 0;
-
+      this.mx = 0;
+      this.my = 0;
+      this.tx = 0;
+      this.ty = 0;
+      this.lx = 0;
+      this.ly = 0;
+   
+      var event = 'ountouchstart' in window ? 'touchmove' : 'mousemove';
+        
       window.addEventListener("resize", this.resize, false);
-      document.addEventListener("mousemove", this.onDocumentMouseMove, false);
+      document.addEventListener( event, this.move, false);
 
       this.resize();
+
+      this.then = window.performance.now();
+      this.now = 0;
       this.render();
+
     },
 
-    onDocumentMouseMove(event) {
-
-      event.preventDefault();
-
-      var w = window.innerWidth / 1,
-        h = window.innerHeight / 1;
-
-      this.mouseX = event.clientX - w / 2;
-      this.mouseY = event.clientY - h / 2;
-
-      console.log("onDocumentMouseMove", event.clientX,event.clientY);
-
+    move(e) {
+      e.preventDefault();
+      e = e.targetTouches ? e.targetTouches[0] : e;
+      this.tx = (e.pageX / window.innerWidth) * 2 - 1;
+      this.ty = (e.pageY / window.innerHeight) * 2 - 1;
     },
 
     resize() {
@@ -96,20 +96,41 @@ export default {
       this.camera.projection = new SQR.ProjectionMatrix().perspective( 70, aspect, 0, 1000 );
     },
 
-    render() {
+    render( timestamp ) {
+
       requestAnimationFrame(this.render);
 
-      //this.now = Date.now();
-      //var delta = this.now - this.then;
+      // calc elapsed time since last loop
+      this.now =  window.performance.now();
+      var delta = this.now - this.then;
 
-      //if (delta > (1000 /60)) {
+      // if enough time has elapsed, draw the next frame
+      if ( delta > this.fps_ms ) {
 
-      this.targetX = this.mouseX * .001;
-      this.targetY = this.mouseY * .001;
+        // Get ready for next frame by setting then=now, but also adjust for your
+        // specified fpsInterval not being a multiple of RAF's interval (16.7ms)
+        this.then = this.now - ( delta % this.fps_ms );
 
-      this.object3d.rotation.y += 0.005 * ( this.targetY - this.object3d.rotation.y );
-      //this.object3d.rotation.x -= 0.005 * ( this.targetX - this.object3d.rotation.x );
-      this.renderer.render(this.root, this.camera);
+
+        this.mx += (this.tx -this.mx) * 0.0025;
+
+        if (Math.abs(this.mx) < 0.15)
+          this.camera.rotation.z = this.mx * Math.PI / 4;
+
+        this.my += (this.ty - this.my) * 0.005;
+
+        if (Math.abs(this.my) < 0.15)
+           this.camera.rotation.x = this.my * Math.PI / 4;
+      
+        this.renderer.render(this.root, this.camera);
+
+      }
+
+
+
+      
+      // console.log("render: " + timestamp );
+
 
       // this.then = this.now - (delta % (1000 / 60));
       // }
@@ -179,8 +200,8 @@ canvas {
 
 #app {
   position: relative;
-  max-height: 1280px;
-  max-height: 720px;
+  max-width: 1280px;
+  max-height: 100%;
   width: 100%;
   height: 100%;
   margin: 0 auto;
@@ -188,6 +209,9 @@ canvas {
   display: -webkit-flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  // background: red
+ 
   
 }
 </style>

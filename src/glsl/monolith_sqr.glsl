@@ -1,6 +1,6 @@
 //#vertex
 
-precision highp float;
+precision lowp float;
 
 attribute vec3 aPosition;
 attribute vec2 aUV;
@@ -19,8 +19,8 @@ void main() {
 
 //#fragment
 
-precision highp float;
-precision mediump int;
+precision lowp float;
+precision lowp int;
                
 uniform float uTime;
 uniform vec2 iResolution;
@@ -34,7 +34,7 @@ varying vec2 vUV;
 #define COLOR_GLOW vec3(1.0, 0.4, 0.4)
 #define LOOK_AT vec3(0., 0., 0.)
 #define UP vec3(0.,0., .5)
-#define BACKGROUND 0.25
+#define BACKGROUND 0.75
 
 struct Ray {
 	vec3 org;
@@ -88,8 +88,8 @@ vec3 grid(vec3 dir, bool vert){
     
     float h = hash(floor(p*sign(dir.z)));
 
-    float h2 = hash( floor(p.y/6.) );
-    float h3 = hash( floor(p.y/20.) + sign(dir.z)) ;
+    float h2 = hash( floor(p.y/1.) );
+    float h3 = hash( floor(p.y/1.) + sign(dir.z)) ;
 
     float band = abs(p.x) < 2. + floor(10.*h3*h3) ? 1. : 0.;
     
@@ -100,7 +100,7 @@ vec3 grid(vec3 dir, bool vert){
     
     h = h < h2/1.2 + 0.1 && vert ? 1. : 0.;
     
-    vec3 acc = hsv2rgb( vec3( 1., h2/10. + time/20.,  1.) ) * h * band * 1. * f;
+    vec3 acc =  vec3( 1., h2/10. + time/20.,  1.)  * h * band * 1. * f;
     //vec3 acc = vec3( time/10., time/20., 1.) * h * band *3. * f; 
     
     return acc * pow( abs(dir.z), .25);
@@ -139,7 +139,7 @@ float udBox( vec3 p, vec3 b )
 float sdTriPrism( vec3 p, vec2 h )
 {
     vec3 q = abs(p);
-    return max(q.z-h.y,max(q.x*0.866025+p.y*0.5,-p.y)-h.x*0.5);
+    return max( q.z-h.y, max(q.x*0.866025 + p.y*0.866025, -p.y) - h.y*0.5 );
 }
 
 float box(vec3 p, vec3 w){
@@ -153,16 +153,15 @@ float box(vec3 p, vec3 w){
 float map(vec3 p){
     float time = uTime * 0.005;
     for (int i = 0; i < 3; i++){
-        p = abs(p*rotation + vec3(0.5, .0, .0));
-        p.x -= (sin(time/15.) + 1.)/4.;
-        p.y -= (sin(time/5.5) + 2.)/6.;
-        p.z -= (sin(time/10.) + 1.)/8.;
+        p = abs( p*rotation + vec3(0.75, .3, .0));
+        p.x -= (sin(time/5.) + 1.)/3.;
+        p.y -= (sin(time/5.) + 1.)/3.;
+        p.z -= (sin(time/5.) + 1.)/3.;
     }
-
     //original: vec3(0.8, 4.4, 0.4)
    // return box(p, vec3(0.95, 5., 1.75));
     //return udBox(p, vec3(0.95, 5., 1.75) );
-  return sdTriPrism(p, vec2(0.5, 3.5) );
+  return sdTriPrism(p, vec2(1.25, 2.5) );
 }
 
 vec3 normal(vec3 pos)
@@ -199,6 +198,7 @@ vec3 selfReflect(Ray ray){
     float glow = 0.04/minDist;
 
     return background(ray.dir)*0.5 + glow * COLOR_GLOW;
+    //return glow * COLOR_GLOW;
 }
 
 
@@ -230,10 +230,10 @@ vec3 render(Ray ray){
     float minDist = 1000.;
     float curMap;
 
-    for (int i = 0; i < 40; i++){
+    for (int i = 0; i < 30; i++){
         pos = ray.org + dist*ray.dir;
         curMap = map(pos);
-        dist+=curMap;
+        dist += curMap;
         minDist = min(minDist,curMap);
     }
     
@@ -243,7 +243,7 @@ vec3 render(Ray ray){
         vec3 n = normal(pos);
         vec3 r = reflect(ray.dir, n);
         vec3 refl = selfReflect(Ray(pos, r));
-        float rf = 0.8-abs(dot(ray.dir, n))*.4;
+        float rf = 1.0-abs(dot(ray.dir, n) )*.4;
         rf *= rf;
         return refl*rf*1.5; 
     }
@@ -271,7 +271,7 @@ void main() {
     
     rotation = rotateX(xt*PI/4.)*rotateY(yt*PI/2.);
 	
-    Ray ray = createRay(cameraPos, LOOK_AT, UP, p, 100., (iResolution.x/ iResolution.y) );
+    Ray ray = createRay(cameraPos, LOOK_AT, UP, p, 110., (iResolution.x/ iResolution.y) );
 
     vec3 col = render(ray);
 
@@ -280,5 +280,10 @@ void main() {
     // simple fogging funcition to darken things the further away they are
     //col = vec3( 1.0 / (1.0 + col * col * 0.01) );
 
-    gl_FragColor = vec4(col, 0.45);
+    vec2 coord = (uv - 0.5) * (iResolution.x/iResolution.y) * 2.0;
+    float rf = sqrt(dot(coord, coord)) * .85;
+    float rf2_1 = rf * rf + 1.0;
+    float vg = 1.0 / (rf2_1 * rf2_1);
+  
+    gl_FragColor = vec4(col * vg, 0.45);
 }
