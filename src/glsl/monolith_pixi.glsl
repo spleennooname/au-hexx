@@ -8,7 +8,6 @@ uniform vec2 iResolution;
 // fx 
 
 #define PI 3.141592653589
-#define tick() ( uTime * 0.001 )
 
 struct Ray {
 	vec3 org;

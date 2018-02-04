@@ -28,8 +28,7 @@ module.exports = {
         use: ["vue-style-loader", "css-loader", "sass-loader?indentedSyntax"]
       },
       {
-        test: /\.(glsl|vs|fs)$/,
-        loader: "shader-loader"
+        test: /\.(glsl|vs|fs)$/, loader: "shader-loader", exclude: /node_modules/
       },
       {
         test: /\.vue$/,
@@ -68,7 +67,8 @@ module.exports = {
     alias: {
       vue$: "vue/dist/vue.runtime.js",
       pixi: "pixi.js/dist/pixi.js",
-      three: "three/build/three.min.js"
+      three: "three/build/three.min.js",
+      twgl: "twgl.js/dist/4.x/twgl-full.js"
     },
     extensions: ["*", ".js", ".vue", ".json"]
   },

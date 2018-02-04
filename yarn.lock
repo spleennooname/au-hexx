@@ -3900,6 +3900,10 @@ nan@^2.3.0, nan@^2.3.2:
   version "2.8.0"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.8.0.tgz#ed715f3fe9de02b57a5e6252d90a96675e1f085a"
 
+nanogl@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/nanogl/-/nanogl-1.0.0.tgz#fd50249f34b06ab17171d43fcdcaa807c605fb05"
+
 nanomatch@^1.2.5:
   version "1.2.7"
   resolved "https://registry.yarnpkg.com/nanomatch/-/nanomatch-1.2.7.tgz#53cd4aa109ff68b7f869591fdc9d10daeeea3e79"
@@ -6056,6 +6060,10 @@ tunnel-agent@~0.4.1:
 tweetnacl@^0.14.3, tweetnacl@~0.14.0:
   version "0.14.5"
   resolved "https://registry.yarnpkg.com/tweetnacl/-/tweetnacl-0.14.5.tgz#5ae68177f192d4456269d108afa93ff8743f4f64"
+
+twgl.js@^4.4.0:
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/twgl.js/-/twgl.js-4.4.0.tgz#cc605fbbd3d8d951174df827a7896ab03b4679fb"
 
 type-is@~1.6.15:
   version "1.6.15"

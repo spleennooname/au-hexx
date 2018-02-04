@@ -1,3 +1,4 @@
+
 <template>
   <div id="app">
     <canvas id="gl"></canvas>
@@ -6,7 +7,9 @@
 
 <script>
 
-const SHADER = require("../glsl/monolith_sqr.glsl");
+const fs = require("../glsl/twgl/vs.glsl");
+const vs = require("../glsl/twgl/fs.glsl");
+// const twgl = require("twgl");
 
 export default {
   name: "app",
@@ -24,50 +27,54 @@ export default {
 
       this.fps_ms = 1000/ 60;
 
-      this.renderer = SQR.Renderer("#gl", {
-        antialias: false,
-        preserveDrawingBuffer: false
-      });
+      const gl = document.getElementById("gl").getContext("webgl");
+      const programInfo = twgl.createProgramInfo(gl, [ vs, fs ]);
+      const arrays = { position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0] };
+      const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays);
 
-      this.renderer.clearColor(0.0, 0.0, 0.0, 1);
+      // this.renderer = SQR.Renderer("#gl", {
+      //   antialias: false,
+      //   preserveDrawingBuffer: false
+      // });
 
-      var w = window.innerWidth / this.scaling,
-          h = window.innerHeight / this.scaling,
-          aspect = w / h;
+      // this.renderer.clearColor(0.0, 0.0, 0.0, 1);
 
-      //camera
-      this.camera = SQR.Transform();
-      this.camera.position.z = 2.5;
-      this.camera.isStatic = false;
+      // var w = window.innerWidth / this.scaling,
+      //     h = window.innerHeight / this.scaling,
+      //     aspect = w / h;
 
-      //root
-      this.root = SQR.Transform();
-      this.root.isStatic = true;
-      this.root.add(this.camera);
+      // //camera
+      // this.camera = SQR.Transform();
+      // this.camera.position.z = 2.5;
+      // this.camera.isStatic = false;
 
-      this.shader = SQR.Shader(SHADER)
-        .use()
-        .setUniform(
-          "iResolution",
-          new SQR.V2(w, h)
-        );
+      // //root
+      // this.root = SQR.Transform();
+      // this.root.isStatic = true;
+      // this.root.add(this.camera);
 
-      this.object3d = SQR.Transform();
-      this.object3d.buffer = SQR.Primitives.createPlane( 4 * aspect, 4, 1, 1, 0, 0 ).update();
-      this.object3d.rotation.x = 90 * ( Math.PI / 180 );
-      this.object3d.shader = this.shader;
+      // this.shader = SQR.Shader(SHADER)
+      //   .use()
+      //   .setUniform(
+      //     "iResolution",
+      //     new SQR.V2(w, h)
+      //   );
 
-      this.root.add(this.object3d);
+      // this.object3d = SQR.Transform();
+      // this.object3d.buffer = SQR.Primitives.createPlane( 4 * aspect, 4, 1, 1, 0, 0 ).update();
+      // this.object3d.rotation.x = 90 * ( Math.PI / 180 );
+      // this.object3d.shader = this.shader;
 
-      this.mx = 0;
-      this.my = 0;
-      this.tx = 0;
-      this.ty = 0;
-      this.lx = 0;
-      this.ly = 0;
+      // this.root.add(this.object3d);
+
+      // this.mx = 0;
+      // this.my = 0;
+      // this.tx = 0;
+      // this.ty = 0;
+      // this.lx = 0;
+      // this.ly = 0;
    
       var event = 'ountouchstart' in window ? 'touchmove' : 'mousemove';
-        
       window.addEventListener("resize", this.resize, false);
       document.addEventListener( event, this.move, false);
 
@@ -90,10 +97,10 @@ export default {
       var w = window.innerWidth / this.scaling,
         h = window.innerHeight / this.scaling,
         aspect = w / h;
-      this.shader.setUniform("iResolution", new SQR.V2(w, h));
 
-      this.renderer.context.size( w ,h, window.devicePixelRatio );
-      this.camera.projection = new SQR.ProjectionMatrix().perspective( 70, aspect, 0, 1000 );
+      // this.shader.setUniform("iResolution", new SQR.V2(w, h) );
+      // this.renderer.context.size( w ,h, window.devicePixelRatio );
+      // this.camera.projection = new SQR.ProjectionMatrix().perspective( 70, aspect, 0, 1000 );
     },
 
     render( timestamp ) {
@@ -112,28 +119,21 @@ export default {
         this.then = this.now - ( delta % this.fps_ms );
 
 
-        this.mx += (this.tx -this.mx) * 0.0025;
+        // this.mx += (this.tx -this.mx) * 0.0025;
 
-        if (Math.abs(this.mx) < 0.15)
-          this.camera.rotation.z = this.mx * Math.PI / 4;
+        // if (Math.abs(this.mx) < 0.15)
+        //   this.camera.rotation.z = this.mx * Math.PI / 4;
 
-        this.my += (this.ty - this.my) * 0.005;
+        // this.my += (this.ty - this.my) * 0.005;
 
-        if (Math.abs(this.my) < 0.15)
-           this.camera.rotation.x = this.my * Math.PI / 4;
+        // if (Math.abs(this.my) < 0.15)
+        //    this.camera.rotation.x = this.my * Math.PI / 4;
       
-        this.renderer.render(this.root, this.camera);
+        // this.renderer.render(this.root, this.camera);
 
       }
 
 
-
-      
-      // console.log("render: " + timestamp );
-
-
-      // this.then = this.now - (delta % (1000 / 60));
-      // }
     }
   },
 
