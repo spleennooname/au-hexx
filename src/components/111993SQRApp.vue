@@ -6,9 +6,9 @@
 
 <script>
 
-import PATTERN_URL from "../assets/micro-512x512.png"
-
-const SHADER = require("../glsl/monolith_sqr.glsl");
+import PATTERN_URL from "../assets/hex-512x512-2.jpg"
+import SHADER_HEX from "../glsl/monolith_sqr.glsl";
+import SHADER_POST from "../glsl/post.glsl";
 
 export default {
   name: "app",
@@ -26,7 +26,7 @@ export default {
 
     sqr( pattern ) {
 
-      this.scaling = 3 ;
+      this.scaling = 2 ;
 
       this.fps_ms = 1000/ 60;
 
@@ -35,15 +35,24 @@ export default {
       });
 
       this.renderer.clearColor(0.0, 0.0, 0.0, 1);
+      this.context = this.renderer.context;
 
       var w = window.innerWidth / this.scaling,
           h = window.innerHeight / this.scaling,
           aspect = w / h;
-        
-      this.pattern = new SQR.Texture( pattern,{
+      
+      
+      this.pattern = new SQR.Texture( pattern, {
         wrap: "REPEAT",
-        mipmap: true
+        mipmap: true,
+        minFilter: this.context.gl.LINEAR,
+        magFilter: this.context.gl.LINEAR
       } );
+
+      this.rawFBO = SQR.FrameBuffer();
+      this.postFBO = SQR.FrameBuffer();
+
+      this.post = SQR.Primitives.createPostEffect(SHADER_POST);
 
       //camera
       this.camera = SQR.Transform();
@@ -59,7 +68,7 @@ export default {
       this.root.isStatic = true;
       this.root.add(this.camera);
 
-      this.shader = SQR.Shader(SHADER)
+      this.shader = SQR.Shader(SHADER_HEX)
         .use()
         .setUniform(
           "iResolution",
@@ -99,7 +108,6 @@ export default {
 
     move(e) {
       e.preventDefault();
-
       e = e.targetTouches ? e.targetTouches[0] : e;
       this.tx = (e.pageX / window.innerWidth) * 2 - 1;
       this.ty = (e.pageY / window.innerHeight) * 2 - 1;
@@ -111,6 +119,9 @@ export default {
         aspect = w / h;
 
       this.shader.setUniform("iResolution", new SQR.V2(w, h) );
+
+      this.rawFBO.resize(w, h);
+      this.postFBO.resize(w, h);
 
       this.renderer.context.size( w ,h, window.devicePixelRatio );
       this.camera.projection = new SQR.ProjectionMatrix().perspective( 70, aspect, 0, 1000 );
@@ -131,6 +142,7 @@ export default {
         // specified fpsInterval not being a multiple of RAF's interval (16.7ms)
         this.then = this.now - ( delta % this.fps_ms );
 
+        
         // this.mx += (this.tx -this.mx) * 0.005;
 
         // if (Math.abs(this.mx) < 0.15)
@@ -141,11 +153,22 @@ export default {
         // if (Math.abs(this.my) < 0.15)
         //    this.camera.rotation.x = this.my * Math.PI / 4;
 
-
-        this.camera.quaternion.copyFrom(this.trackball.rotation)
-      
+        //this.camera.quaternion.copyFrom(this.trackball.rotation);
+    
+        this.rawFBO.bind();
         this.renderer.render(this.root, this.camera);
 
+        this.postFBO.bind();
+        this.renderer.renderToScreen();
+
+        this.context.gl.viewport(0, 0, this.context.canvas.width, this.context.canvas.height);
+
+        this.post.shader.use();
+        //post.shader.setUniform('iResolution', size);
+        this.post.shader.setUniform('uTexture', this.rawFBO.texture);
+        this.renderer.render(this.post);
+
+       
       }
 
     }

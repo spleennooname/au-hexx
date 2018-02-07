@@ -68,6 +68,10 @@ float hash(vec2 p)
     return fract(sin(dot(p.xy , vec2(12.9898,78.233))) * 43758.5453);
 }
 
+float luma(vec3 color) {
+    return dot(color, vec3(0.299, 0.587, 0.114));
+}
+
 // vec3 hsv2rgb(vec3 c)
 // {
 //     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -117,9 +121,9 @@ vec3 tunnel( sampler2D texture, vec2 iResolution, float time ){
     float h=0.5;
     vec3 col = vec3(0.0);
 
-    float zoo = 1.0 + 0.25*sin(.5*time);
+    float zoo = 0.5 + 0.25 * sin( .5*time );
 
-    vec2 p = -1.8*zoo + 2.0*(gl_FragCoord.xy/iResolution.xy);  
+    vec2 p = -1.8 * zoo + 2.0 * (gl_FragCoord.xy/iResolution.xy);  
 
     vec2 tx_uv;
     tx_uv.x =  p.x / p.y ;
@@ -146,8 +150,7 @@ vec3 background(vec3 dir){
 //     return box;
 // }
 
-float sdHexPrism( vec3 p, vec2 h )
-{
+float sdHexPrism( vec3 p, vec2 h ) {
     vec3 q = abs(p);
     return max(q.z-h.y,max((q.x*0.866025+q.y*0.5),q.y)-h.x);
 }
@@ -195,18 +198,15 @@ float sdHexPrism( vec3 p, vec2 h )
 //     return m; 
 // }
 
-
 float map(vec3 p){
-    lowp float time = uTime * 0.002;
-    for (lowp int i = 0; i < 3; i++){
-       
-        p = abs(p*rotation + vec3(0.1, .0, .0));
-       // p.x -= (sin(time/5.) + 1.)/2.;
-       p.y -= (sin(time/7.) + 1.)/2.;
-       // p.z -= (sin(time/3.) + 1.)/4.;
+    float time = uTime * 0.002;
+    for ( int i = 0; i < 3; i++){
+       p = abs( p*rotation + vec3(0.1, .0, .0));
+       p.x -= (sin(time * 1. ) + 0.5) * .25;
+       p.y -= (sin(time * .25 ) + 0.15) * .25;
+       //p.z -= (sin(time/3.) + 1.)/4.;
     }
-    
-    return sdHexPrism(p, vec2(0.75, 0.75 * 5.) );
+    return sdHexPrism(p, vec2(0.75 * 1., 0.75 * 5.) );
     //return sdTriPrism(p, vec2(1.8, 2.0) );
     //return box(p, vec3(2.8, 100.4, 0.4));
 }
@@ -251,7 +251,7 @@ vec3 selfReflect(Ray ray){
         pos = ray.org + dist*ray.dir;
         curMap = map(pos);
         dist+=curMap;
-        if(i > 7){
+        if(i > 3){
             minDist = min(minDist,curMap);
         }
     }
@@ -315,27 +315,45 @@ void main( void ) {
 
     float time = uTime * 0.0007;
     float aspect = (iResolution.x/ iResolution.y);
-
    
-    vec3 cameraPos = vec3 (-8., 2.*sin(time/10.), -2.*sin(time/4.) );
-    float xt = floor(time/8.) + clamp(fract(time/2.)*20.,0.,1.);
-    float yt = floor(time/2.) + clamp(fract(time/2.)*5.,0.,1.);
+    vec3 cameraPos = vec3 (-8., 2.*sin(time/8.), -2.*sin(time * .25) );
+    float xt = floor(time * .125) + clamp(fract(time * 0.5)*20.,0.,1.);
+    float yt = floor(time * .5) + clamp(fract(time * .5)*5.,0.,1.);
     
-    rotation = rotateX(xt*PI/4.)*rotateY(yt*PI/2.);
+    rotation = rotateX( xt*PI/4. ) * rotateY( yt*PI/2.);
 	
     Ray ray = createRay(cameraPos, LOOK_AT, UP, uv, 90., aspect );
 
     col = render(ray);
 
-    vec3 doom = tunnel( uPatternTexture, iResolution, uTime* 0.00025);
+    vec3 doom = tunnel( uPatternTexture, iResolution, uTime* 0.0005);
+
+    // vec2 center = vec2( 0.5 );
+    // float noiseScale = 1.;
+    // float radius = 0.5;
+    // float scale =1.;
+    // vec2 d = uv - center;
+    // float r = length( d * vec2( 1., (iResolution.y/ iResolution.x) ) ) * scale;
+    // float a = atan(d.y,d.x) + noiseScale*(radius-r)/radius;
+    // vec2 uvt = center+r*vec2(cos(a),sin(a));
+    // vec2 uv2 = vUV;
+    // float c = ( .75 + .25 * sin( uvt.x * 1000. ) );
+   
+
+    col = (col + COLOR_DOOM * doom *.40 );
+
+    // float l = luma( col);
+    // float f = smoothstep( .5 * c, c, l );
+    // f = smoothstep( 0., .5, f );
+    // col = vec3(f);
 
     //vignetting 
 
     // vec2 coord = (uv - 0.5) * aspect * 2.0;
-    // float rf = sqrt( dot(coord, coord) ) * .85;
+    // float rf = sqrt( dot(coord, coord) ) * .5;
     // float rf2_1 = rf * rf + 1.0;
     // float vg = 1.0 / (rf2_1 * rf2_1);
   
-    gl_FragColor = vec4(col + COLOR_DOOM * doom *.40, 0.75);
+    gl_FragColor = vec4( col, 0.75);
 
 }
