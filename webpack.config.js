@@ -9,7 +9,7 @@ module.exports = {
 
   output: {
     path: path.resolve(__dirname, "./dist"),
-    publicPath: "/dist/",
+    publicPath: "dist/",
     filename: "build.js"
   },
 
@@ -57,8 +57,8 @@ module.exports = {
         test: /\.(png|jpg|gif|svg)$/,
         loader: "file-loader",
         options: {
-          name: "[name].[ext]?[hash]",
-          outputPath: "assets/"
+          name: "[name].[ext]",
+          publicPath: "./"
         }
       }
     ]
