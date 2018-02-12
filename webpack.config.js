@@ -57,7 +57,8 @@ module.exports = {
         test: /\.(png|jpg|gif|svg)$/,
         loader: "file-loader",
         options: {
-          name: "[name].[ext]?[hash]"
+          name: "[name].[ext]?[hash]",
+          publicPath: "/dist/"
         }
       }
     ]
@@ -80,10 +81,10 @@ module.exports = {
   },
   
   performance: {
-    hints: false
+    hints: "warning"
   },
   
-  //devtool: "#eval-source-map"
+  devtool: "cheap-module-source-map"
 };
 
 module.exports.plugins = [
@@ -93,6 +94,9 @@ module.exports.plugins = [
   //   template: 'index.html',
   //   inject: false
   // })
+  new webpack.HotModuleReplacementPlugin({
+    // Options...
+  })
 ];
 
 if (process.env.NODE_ENV === 'production') {

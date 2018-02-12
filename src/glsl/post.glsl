@@ -24,10 +24,25 @@ varying vec2 vUV;
 
 void main( void ) {
 
+
+ float v = 0.01;
+  float r = 0.5;
+
   vec2 uv = vUV;
+  vec4 sum = vec4( 0.0 );
+  float vv = v * abs( r - vUV.y );
 
-  vec3 col = texture2D( uTexture, uv).rgb;
+  
+  sum += texture2D( uTexture, vec2( vUV.x, vUV.y - 4.0 * vv ) ) * 0.051;
+  sum += texture2D( uTexture, vec2( vUV.x, vUV.y - 3.0 * vv ) ) * 0.0918;
+  sum += texture2D( uTexture, vec2( vUV.x, vUV.y - 2.0 * vv ) ) * 0.12245;
+  sum += texture2D( uTexture, vec2( vUV.x, vUV.y - 1.0 * vv ) ) * 0.1531;
+  sum += texture2D( uTexture, vec2( vUV.x, vUV.y ) ) * 0.1633;
+  sum += texture2D( uTexture, vec2( vUV.x, vUV.y + 1.0 * vv ) ) * 0.1531;
+  sum += texture2D( uTexture, vec2( vUV.x, vUV.y + 2.0 * vv ) ) * 0.12245;
+  sum += texture2D( uTexture, vec2( vUV.x, vUV.y + 3.0 * vv ) ) * 0.0918;
+  sum += texture2D( uTexture, vec2( vUV.x, vUV.y + 4.0 * vv ) ) * 0.051;
 
-  gl_FragColor = vec4(col, 1.0);
+  gl_FragColor = sum;
 
 }

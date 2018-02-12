@@ -3,7 +3,7 @@
 precision mediump float;
 #endif
                
-uniform float uTime;
+uniform float time;
 uniform vec2 iResolution;
 
 varying vec2 vUv;
@@ -11,7 +11,7 @@ varying vec2 vUv;
 // fx 
 
 #define PI 3.141592653589
-#define tick() ( uTime * 0.001 )
+#define tick() ( time * 0.001 )
 
 struct Ray {
 	vec3 org;
@@ -55,7 +55,7 @@ vec3 grid(vec3 dir, bool vert){
     
     p *= 3.;
     
-    float time = uTime * 0.01;
+    time = time * 0.01;
 
     p.y *= 0.06;
     p.y += time * 20.3;
@@ -94,7 +94,7 @@ float box(vec3 p, vec3 w){
 
 float map(vec3 p){
     for (int i = 0; i < 3; i++){
-        float time = uTime;
+        //float time = time;
         p = abs(p*rotation + vec3(0.1, .0, .0));
         p.x -= (sin(time/8.) + 1.)/2.;
         p.y -= (sin(time/7.) + 1.)/3.;
@@ -192,7 +192,9 @@ Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspec
 void main( void) {
   
     vec2 uv = vUv;
-    float time = uTime * 0.01;
+     
+    time = time * 0.01;
+    
     vec2 size = iResolution;
 
     vec2 p = gl_FragCoord.xy / size;
