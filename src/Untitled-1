@@ -2,12 +2,12 @@
   <div id="app">
     <canvas id="gl"></canvas>
      <div class="title">AuHE<sup>XX</sup><br/><span style="font-size:0.8em">FOR DEVX2018</span></div>
+     <div class="hud"></div>
   </div>
  
 </template>
 
 <script>
-
 import PATTERN_URL from "../assets/hex-512x512-2.jpg";
 import SHADER_HEX from "../glsl/monolith_sqr.glsl";
 import SHADER_POST from "../glsl/post.glsl";
@@ -20,10 +20,7 @@ export default {
 
   methods: {
     init() {
-
-      if ( this.has_webgl() ){
-       SQR.Loader.loadImage(PATTERN_URL, this.sqr);
-      }
+      SQR.Loader.loadImage(PATTERN_URL, this.sqr);
     },
 
     has_webgl() {
@@ -126,6 +123,9 @@ export default {
         document.addEventListener("mouseup", this._onInteractionEnd, false);
       }
 
+      this._sentenceEndExp = /(\.|\?|!)$/g;
+      this.machineGun("These words are constantly animating in your face to suck you in and leave you hanging for what comes next. Can you handle the awesomeness? Or are you left quivering in fear? It's only text, silly. Longer words stay on the screen for a greater duration. Each sentence ends with a dramatatic pause. Yes, that pause. The End");
+
       this.resize();
 
       this.t = 0.0;
@@ -153,12 +153,69 @@ export default {
       });
     },
 
+    _randomRange(min, max){
+      return Math.random() * (max - min) + min;
+    },
+
     _normalizeMouseCoords(e) {
       e = "ontouchstart" in document ? e.targetTouches[0] : e;
       this.mx =
         (e.pageX / window.innerWidth * 2 - 1) *
         (window.innerWidth / window.innerHeight);
       this.my = (e.pageY / window.innerHeight * 2 - 1) * -1;
+    },
+
+    machineGun(text) {
+
+      var words = text.split(" "),
+          tl = new TimelineMax({
+            delay:0.6, repeat:10000, repeatDelay:4, yoyo:true
+            }),
+          wordCount = words.length,
+          time = 0,
+          word, element, duration, isSentenceEnd, i;
+      
+      for(i = 0; i < wordCount; i++){
+          word = words[i];
+          isSentenceEnd = this._sentenceEndExp.test(word);
+      
+          element = document.createElement("H3");
+          element.appendChild( document.createTextNode(word))
+
+          document.querySelector(".hud").appendChild( element )
+          //element = $("<h3>" + word + "</h3>").appendTo( $(".hud"));
+
+          duration = Math.max(1.5, word.length * 0.08); //longer words take longer to read, so adjust timing. Minimum of 0.5 seconds.
+          
+          if (isSentenceEnd) {
+            duration += 0.6; //if it's the last word in a sentence, drag out the timing a bit for a dramatic pause.
+          }
+          
+          TweenLite.set(element, {autoAlpha:0, scale:0, z:0.01});
+          
+          var w = window.innerWidth;
+          var h = window.innerHeight;
+
+          tl.to(element, duration, {
+              scale:1.1, 
+              rotationZ: 10,
+              // x: this._randomRange(w/2-100, w-100),
+              // y: this._randomRange(h/2- 100, h-100),
+              ease:SlowMo.ease.config(0.25, 0.9)
+            }, time)
+           .to(element, duration, {
+             autoAlpha:0.4, 
+             rotationZ: 0,
+             scale: 1.0,
+             ease:SlowMo.ease.config(0.25, 0.9, true)
+            }, time);
+
+          time += duration - 0.05;
+          if (isSentenceEnd) {
+            time += 0.6; //at the end of a sentence, add a pause for dramatic effect.
+          }
+      }
+      
     },
 
     resize() {
@@ -294,6 +351,35 @@ canvas {
   top: 20px;
   left: 20px;
   z-index: 1;
+}
+
+.hud {
+  position: fixed;
+
+  display: -webkit-flex;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  font-size: 20px;
+  
+  color: white;
+  top: 10vh;
+  width: 300px;
+  left: 20px;
+  z-index: 1;
+
+  h3{
+    position: absolute;
+    font-weight: 400;
+    text-transform: uppercase;
+    font-size: 20px;
+    text-align: left;
+    display: inline-block;
+    margin-left:0;
+  }
+
 }
 
 #app {

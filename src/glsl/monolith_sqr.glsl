@@ -1,6 +1,6 @@
 //#vertex
 
-precision highp float;
+precision mediump float;
 
 attribute vec3 aPosition;
 attribute vec2 aUV;
@@ -19,12 +19,15 @@ void main() {
 
 //#fragment
 
-precision highp float;
+precision mediump float;
 precision lowp int;
                
 uniform float uTime;
 uniform vec2 iResolution;
 uniform mediump sampler2D uPatternTexture;
+
+//
+uniform mediump float u_param;
 
 varying vec2 vUV;
 
@@ -120,7 +123,7 @@ vec3 grid(vec3 dir, bool vert){
     h = h < h2/5. + 0.1 && vert ? 1. : 0.;
     
     //vec3 acc = hsv2rgb( vec3(h2/5.+time/30.,.9,0.9)) *h  *band * 3.* f;
-    vec3 acc = vec3( h  * band * 3.* f );
+    vec3 acc = vec3( h  * band * 3.* f ) ;
 
     return acc;//*pow(abs(dir.z),.5);
 }
@@ -131,7 +134,7 @@ vec3 tunnel( sampler2D texture, vec2 iResolution, float time ){
     float h=0.5;
     vec3 col = vec3(0.0);
 
-    lowp float zoo = 1.5 + 0.10 * sin( .5*time );
+    lowp float zoo = 1.5 + 1.5 * sin( .65*time );
 
     lowp vec2 p = -0.8 * zoo + 2.25 * (gl_FragCoord.xy/iResolution.xy);  
 
@@ -227,6 +230,7 @@ float map(vec3 p){
        //p.z -= (sin(time * .5 ) + .3) * .25;
     }
     return sdHexPrism(p, vec2(0.75 * 2., 0.75 * 1.  ) );
+    
     //return sdTriPrism(p, vec2(1.8, 2.0) );
     //return box(p, vec3(2.8, 10.4, 0.4));
 }
