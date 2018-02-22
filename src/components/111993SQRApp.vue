@@ -1,13 +1,12 @@
 <template>
   <div id="app">
     <canvas id="gl"></canvas>
-     <div class="title">AuHE<sup>XX</sup><br/><span style="font-size:0.8em">FOR DEVX2018</span></div>
+     <div class="title">AuHE<sup>X<sup>X</sup></sup><br/><span style="font-size:0.8em"></span></div>
   </div>
  
 </template>
 
 <script>
-
 import PATTERN_URL from "../assets/hex-512x512-2.jpg";
 import SHADER_HEX from "../glsl/monolith_sqr.glsl";
 import SHADER_POST from "../glsl/post.glsl";
@@ -20,9 +19,8 @@ export default {
 
   methods: {
     init() {
-
-      if ( this.has_webgl() ){
-       SQR.Loader.loadImage(PATTERN_URL, this.sqr);
+      if (this.has_webgl()) {
+        SQR.Loader.loadImage(PATTERN_URL, this.sqr);
       }
     },
 
@@ -41,7 +39,7 @@ export default {
 
     sqr(pattern) {
       var hash = window.location.hash.substring(1);
-      this.scaling = hash !== "" ? parseFloat(hash) : 2;
+      this.scaling = hash !== "" ? parseFloat(hash) : 1.5;
 
       this.fps_ms = 1000 / 60;
 
@@ -75,7 +73,7 @@ export default {
       this.camera.useQuaternion = true;
 
       //trackball
-      this.trackball = new SQR.Trackball();
+      //this.trackball = new SQR.Trackball();
 
       //root
       this.root = SQR.Transform();
@@ -88,14 +86,7 @@ export default {
         .setUniform("uPatternTexture", this.pattern);
 
       this.object3d = SQR.Transform();
-      this.object3d.buffer = SQR.Primitives.createPlane(
-        4 * aspect,
-        4,
-        1,
-        1,
-        0,
-        0
-      ).update();
+      this.object3d.buffer = SQR.Primitives.createPlane( 4 * aspect, 4, 1, 1, 0, 0 ).update();
       this.object3d.rotation.x = 90 * (Math.PI / 180);
       this.object3d.shader = this.shader;
 
@@ -113,13 +104,13 @@ export default {
 
       this._isInteraction = false;
       if ("ontouchstart" in document) {
-        document.addEventListener(
-          "touchstart",
-          this._onInteractionStart,
-          false
-        );
-        document.addEventListener("touchmove", this._onInteractionMove, false);
-        document.addEventListener("touchend", this._onInteractionEnd, false);
+        // document.addEventListener(
+        //   "touchstart",
+        //   this._onInteractionStart,
+        //   false
+        // );
+        // document.addEventListener("touchmove", this._onInteractionMove, false);
+        // document.addEventListener("touchend", this._onInteractionEnd, false);
       } else {
         document.addEventListener("mousedown", this._onInteractionStart, false);
         document.addEventListener("mousemove", this._onInteractionMove, false);
@@ -135,29 +126,54 @@ export default {
     },
 
     _onInteractionStart(e) {
+
+      this._isInteraction = true;
+
+      this._normalizeMouseCoords(e);
       this.cameraz = 1.85;
+
+       TweenMax.to(this.camera.position, 0.5, {
+        z: this.cameraz,
+        onComplete: function() {
+         
+        }
+      });
+
     },
 
     _onInteractionEnd(e) {
-      this.cameraz = 2.5;
-    },
 
-    _onInteractionMove(e) {
+      this._isInteraction = false
+
       this._normalizeMouseCoords(e);
-      TweenMax.killTweensOf(this.camera.position);
-      TweenMax.to(this.camera.position, 0.5, {
+      this.cameraz = 2.5;
+
+       TweenMax.to(this.camera.position, 0.5, {
         z: this.cameraz,
         onComplete: function() {
-          this._isInteraction = false;
+          
         }
       });
     },
 
+    _onInteractionMove(e) {
+      this._normalizeMouseCoords(e);
+      
+     
+
+      var d = Math.sqrt(this.mx * this.mx + this.my * this.my) ;
+    //console.log(d)
+       this.shader.setUniform("u_param", 0.0 );
+      
+      if( this._isInteraction ){
+
+      }
+     
+    },
+
     _normalizeMouseCoords(e) {
       e = "ontouchstart" in document ? e.targetTouches[0] : e;
-      this.mx =
-        (e.pageX / window.innerWidth * 2 - 1) *
-        (window.innerWidth / window.innerHeight);
+      this.mx = (e.pageX / window.innerWidth * 2 - 1) * (window.innerWidth / window.innerHeight);
       this.my = (e.pageY / window.innerHeight * 2 - 1) * -1;
     },
 
@@ -172,12 +188,7 @@ export default {
       this.postFBO.resize(w, h);
 
       this.renderer.context.size(w, h, window.devicePixelRatio);
-      this.camera.projection = new SQR.ProjectionMatrix().perspective(
-        70,
-        aspect,
-        0,
-        1000
-      );
+      this.camera.projection = new SQR.ProjectionMatrix().perspective( 70, aspect, 0, 1000 );
     },
 
     render(timestamp) {
@@ -211,12 +222,7 @@ export default {
         this.postFBO.bind();
         this.renderer.renderToScreen();
 
-        this.context.gl.viewport(
-          0,
-          0,
-          this.context.canvas.width,
-          this.context.canvas.height
-        );
+        this.context.gl.viewport( 0, 0, this.context.canvas.width, this.context.canvas.height );
 
         this.post.shader.use();
         this.post.shader.setUniform("uTexture", this.rawFBO.texture);
