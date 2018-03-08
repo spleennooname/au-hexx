@@ -23,7 +23,8 @@ export default {
   name: "app",
   data() {
     return {
-      cover: 1
+      cover: 1,
+      uForce: 0.0
     };
   },
 
@@ -91,10 +92,13 @@ export default {
       this.root.isStatic = true;
       this.root.add(this.camera);
 
+      this.uForce = 1.0;
+
       this.shader = SQR.Shader(SHADER_HEX)
         .use()
         .setUniform("iResolution", new SQR.V2(w, h))
-        .setUniform("uPatternTexture", this.pattern);
+        .setUniform("uPatternTexture", this.pattern)
+        .setUniform("uForce", this.uForce);
 
       this.object3d = SQR.Transform();
       this.object3d.buffer = SQR.Primitives.createPlane(
@@ -135,7 +139,7 @@ export default {
         document.addEventListener("mouseup", this._onInteractionEnd, false);
       }
 
-      this.uForce = 0.0;
+     
       Pressure.set("#app", {
         start: function(event) {
           // this is called on force start
@@ -152,7 +156,7 @@ export default {
       });
 
       this.cover = 0;
-
+     
       this.resize();
 
       this.t = 0.0;
@@ -165,10 +169,14 @@ export default {
 
      this.uForce = force;
      //console.log("force in", force)
-     this.shader.setUniform("uForce", force);
-       
-
+     //this.shader.setUniform("uForce", force);
     },
+
+   _interaction_update( shader, tween, prop) {
+               // console.log("force out", tween.target[prop])
+                //shader.setUniform("uForce", tween.target[prop]);
+        this.uForce = tween.target[prop]
+     },
 
     _interaction_end(){
       //console.log("end")
@@ -180,10 +188,7 @@ export default {
            TweenMax.to(this.tweenForce, 0.35, {
               value: 0,
               onUpdateParams:[ this.shader, "{self}", "value"],
-              onUpdate: function( shader, tween, prop) {
-               // console.log("force out", tween.target[prop])
-                shader.setUniform("uForce", tween.target[prop]);
-              }
+              onUpdate: this._interaction_update
             });
     },
 
@@ -249,6 +254,7 @@ export default {
     },
 
     render(timestamp) {
+
       requestAnimationFrame(this.render);
 
       // calc elapsed time since last loop
@@ -261,10 +267,12 @@ export default {
         // specified fpsInterval not being a multiple of RAF's interval (16.7ms)
         this.then = this.now - delta % this.fps_ms;
 
-
+        //console.log("****", this.uForce)
+       
         this.rawFBO.bind();
+         
         this.renderer.render(this.root, this.camera);
-
+  this.shader.setUniform("uForce", this.uForce);
         this.postFBO.bind();
         this.renderer.renderToScreen();
         this.context.gl.viewport( 0, 0, this.context.canvas.width, this.context.canvas.height );

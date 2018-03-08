@@ -26,8 +26,8 @@ uniform float uTime;
 uniform vec2 iResolution;
 uniform mediump sampler2D uPatternTexture;
 
-//
-uniform mediump float uForce;
+
+uniform float uForce;
 
 varying vec2 vUV;
 
@@ -48,6 +48,7 @@ struct Ray {
 };
 
 mat3 rotation;
+float force;
 
 mat3 rotateX(float a){
     return mat3(1.,0.,0.,
@@ -172,7 +173,7 @@ float box(vec3 p, vec3 w){
 
 float sdHexPrism( vec3 p, vec2 h ) {
     vec3 q = abs(p);
-    return max( q.z-h.y, max( (q.x*0.866025 + q.y * (1.5 + uForce * 100.)  ), q.y ) - h.x );
+    return max( q.z-h.y, max( (q.x*0.866025 + q.y * (1.5 + 0.0 *  1.0)  ), q.y ) - h.x );
 // }
 }
 
@@ -223,7 +224,7 @@ float map(vec3 p){
     float time = uTime * 0.002;
     for ( int i = 0; i < 3; i++){
        p = abs( p*rotation + vec3(0.1, .0, .0));
-       p.x -= (sin(time * .25 ) +  uForce * 3. + 3.5) * .25;
+       p.x -= (sin(time * .25 ) + force * 5. + 3.5) * .25;
        p.y -= (sin(time * .5 ) + 3.15) * .15;
     }
     return sdHexPrism(p, vec2(0.75 * 2., (  0.25 * 1.  ) ) );
@@ -332,6 +333,8 @@ void main( void ) {
   
     vec2 uv = vUV;
     vec3 col = BACKGROUND;
+
+    force = uForce;
 
     float time = uTime * 0.0007;
     float aspect = (iResolution.x/ iResolution.y);
