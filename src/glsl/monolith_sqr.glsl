@@ -27,7 +27,7 @@ uniform vec2 iResolution;
 uniform mediump sampler2D uPatternTexture;
 
 //
-uniform mediump float u_param;
+uniform mediump float uForce;
 
 varying vec2 vUV;
 
@@ -172,7 +172,7 @@ float box(vec3 p, vec3 w){
 
 float sdHexPrism( vec3 p, vec2 h ) {
     vec3 q = abs(p);
-    return max( q.z-h.y, max( (q.x*0.866025+q.y*1.5), q.y ) - h.x );
+    return max( q.z-h.y, max( (q.x*0.866025 + q.y * (1.5 + uForce * 100.)  ), q.y ) - h.x );
 // }
 }
 
@@ -222,15 +222,11 @@ float sdHexPrism( vec3 p, vec2 h ) {
 float map(vec3 p){
     float time = uTime * 0.002;
     for ( int i = 0; i < 3; i++){
-       
        p = abs( p*rotation + vec3(0.1, .0, .0));
-
-       p.x -= (sin(time * .25 ) + 3.5) * .25;
+       p.x -= (sin(time * .25 ) +  uForce * 3. + 3.5) * .25;
        p.y -= (sin(time * .5 ) + 3.15) * .15;
-       //p.z -= (sin(time * .5 ) + .3) * .25;
     }
-    return sdHexPrism(p, vec2(0.75 * 2., 0.75 * 1.  ) );
-    
+    return sdHexPrism(p, vec2(0.75 * 2., (  0.25 * 1.  ) ) );
     //return sdTriPrism(p, vec2(1.8, 2.0) );
     //return box(p, vec3(2.8, 10.4, 0.4));
 }

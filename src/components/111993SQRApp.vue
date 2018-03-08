@@ -1,7 +1,13 @@
 <template>
   <div id="app">
     <canvas id="gl"></canvas>
-     <div class="title">AuHE<sup>X<sup>X</sup></sup><br/><span style="font-size:0.8em"></span></div>
+    <div class="title">AuHE<sup>X<sup>X</sup></sup><br/><span style="font-size:0.8em"></span></div>
+    <transition name="fade" mode="out-in">
+        <div class="cover" v-if="cover == 1">
+            <blockquote>&laquo;i've spent, I think, close to the last decade effortlessly and magically converting your tin cans into pure gold.&raquo;</blockquote><br/>
+            <span>Charlie Sheen</span>
+        </div>
+    </transition>
   </div>
  
 </template>
@@ -11,10 +17,14 @@ import PATTERN_URL from "../assets/hex-512x512-2.jpg";
 import SHADER_HEX from "../glsl/monolith_sqr.glsl";
 import SHADER_POST from "../glsl/post.glsl";
 
+const Pressure = require("pressure");
+
 export default {
   name: "app",
   data() {
-    return {};
+    return {
+      cover: 1
+    };
   },
 
   methods: {
@@ -44,7 +54,8 @@ export default {
       this.fps_ms = 1000 / 60;
 
       this.renderer = SQR.Renderer("#gl", {
-        antialias: false
+        antialias: true,
+        transparent: true
       });
 
       this.renderer.clearColor(0.0, 0.0, 0.0, 1);
@@ -86,7 +97,14 @@ export default {
         .setUniform("uPatternTexture", this.pattern);
 
       this.object3d = SQR.Transform();
-      this.object3d.buffer = SQR.Primitives.createPlane( 4 * aspect, 4, 1, 1, 0, 0 ).update();
+      this.object3d.buffer = SQR.Primitives.createPlane(
+        4 * aspect,
+        4,
+        1,
+        1,
+        0,
+        0
+      ).update();
       this.object3d.rotation.x = 90 * (Math.PI / 180);
       this.object3d.shader = this.shader;
 
@@ -117,6 +135,24 @@ export default {
         document.addEventListener("mouseup", this._onInteractionEnd, false);
       }
 
+      this.uForce = 0.0;
+      Pressure.set("#app", {
+        start: function(event) {
+          // this is called on force start
+          //console.log("start")
+        },
+        end: this._interaction_end,
+        startDeepPress: function(event) {
+          // this is called on "force click" / "deep press", aka once the force is greater than 0.5
+        },
+        endDeepPress: function() {
+          // this is called when the "force click" / "deep press" end
+        },
+        change: this._interaction_change
+      });
+
+      this.cover = 0;
+
       this.resize();
 
       this.t = 0.0;
@@ -125,8 +161,33 @@ export default {
       this.render();
     },
 
-    _onInteractionStart(e) {
+    _interaction_change(force, event) {
 
+     this.uForce = force;
+     //console.log("force in", force)
+     this.shader.setUniform("uForce", force);
+       
+
+    },
+
+    _interaction_end(){
+      //console.log("end")
+
+          this.tweenForce = {
+            value: this.uForce
+          }
+
+           TweenMax.to(this.tweenForce, 0.35, {
+              value: 0,
+              onUpdateParams:[ this.shader, "{self}", "value"],
+              onUpdate: function( shader, tween, prop) {
+               // console.log("force out", tween.target[prop])
+                shader.setUniform("uForce", tween.target[prop]);
+              }
+            });
+    },
+
+    _onInteractionStart(e) {
       this._isInteraction = true;
 
       this._normalizeMouseCoords(e);
@@ -135,15 +196,13 @@ export default {
        TweenMax.to(this.camera.position, 0.5, {
         z: this.cameraz,
         onComplete: function() {
-         
+
         }
       });
-
     },
 
     _onInteractionEnd(e) {
-
-      this._isInteraction = false
+      this._isInteraction = false;
 
       this._normalizeMouseCoords(e);
       this.cameraz = 2.5;
@@ -151,29 +210,27 @@ export default {
        TweenMax.to(this.camera.position, 0.5, {
         z: this.cameraz,
         onComplete: function() {
-          
+
         }
       });
     },
 
     _onInteractionMove(e) {
       this._normalizeMouseCoords(e);
-      
-     
 
-      var d = Math.sqrt(this.mx * this.mx + this.my * this.my) ;
-    //console.log(d)
-       this.shader.setUniform("u_param", 0.0 );
-      
-      if( this._isInteraction ){
+      var d = Math.sqrt(this.mx * this.mx + this.my * this.my);
+      //console.log(d)
+      this.shader.setUniform("u_param", 0.0);
 
+      if (this._isInteraction) {
       }
-     
     },
 
     _normalizeMouseCoords(e) {
       e = "ontouchstart" in document ? e.targetTouches[0] : e;
-      this.mx = (e.pageX / window.innerWidth * 2 - 1) * (window.innerWidth / window.innerHeight);
+      this.mx =
+        (e.pageX / window.innerWidth * 2 - 1) *
+        (window.innerWidth / window.innerHeight);
       this.my = (e.pageY / window.innerHeight * 2 - 1) * -1;
     },
 
@@ -204,24 +261,12 @@ export default {
         // specified fpsInterval not being a multiple of RAF's interval (16.7ms)
         this.then = this.now - delta % this.fps_ms;
 
-        // this.mx += (this.tx -this.mx) * 0.005;
-
-        // if (Math.abs(this.mx) < 0.15)
-        //   this.camera.rotation.z = this.mx * Math.PI / 4;
-
-        // this.my += (this.ty - this.my) * 0.005;
-
-        // if (Math.abs(this.my) < 0.15)
-        //    this.camera.rotation.x = this.my * Math.PI / 4;
-
-        //this.camera.quaternion.copyFrom(this.trackball.rotation);
 
         this.rawFBO.bind();
         this.renderer.render(this.root, this.camera);
 
         this.postFBO.bind();
         this.renderer.renderToScreen();
-
         this.context.gl.viewport( 0, 0, this.context.canvas.width, this.context.canvas.height );
 
         this.post.shader.use();
@@ -238,6 +283,22 @@ export default {
 </script>
 
 <style lang="scss">
+
+.fade-enter-active{
+  -webkit-transition: opacity 8.0s ease-out;
+  transition: opacity 8.0s ease-out
+}
+.fade-leave-active {
+  -webkit-transition: opacity 4s ease-out 15s;
+  transition: opacity 4s ease-out;
+}
+
+.fade-enter,
+.fade-leave-active {
+  opacity: 0
+}
+
+
 *,
 *:after,
 *:before {
@@ -287,7 +348,7 @@ canvas {
   height: 100%;
 
   pointer-events: none;
-  // background-color: grey;
+
   opacity: 1;
   z-index: 1;
 }
@@ -316,5 +377,33 @@ canvas {
   justify-content: center;
   overflow: hidden;
   // background: red
+}
+
+.cover{
+  position: fixed;
+  display: flex;
+  display: -webkit-flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  color: white;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 1.25rem;
+  z-index: 666;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, .85);
+
+  > blockquote{
+    width: 60vw;
+  }
+  > span{
+    font-size: 0.85rem;
+  }
+
 }
 </style>

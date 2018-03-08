@@ -1,5 +1,5 @@
 {
-  "name": "monolith",
+  "name": "au-hexx",
   "description": "monolith fx 4 devx2108",
   "version": "1.0.0",
   "author": "Andrea Bovo <spleen666@gmail.com>",
@@ -8,12 +8,11 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules",
-    "deploy": "surge dist 111993.surge.sh"
+    "deploy": "surge dist au-hexx.surge.sh"
   },
   "dependencies": {
     "gsap": "^1.20.3",
-    "pixi.js": "^4.6.2",
-    "three": "^0.89.0",
+    "pressure": "^2.1.2",
     "vue": "^2.5.11"
   },
   "browserslist": [
