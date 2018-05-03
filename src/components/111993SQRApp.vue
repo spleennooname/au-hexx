@@ -9,7 +9,6 @@
         </div>
     </transition>
   </div>
- 
 </template>
 
 <script>
@@ -52,7 +51,7 @@ export default {
       var hash = window.location.hash.substring(1);
       this.scaling = hash !== "" ? parseFloat(hash) : 1.5;
 
-      this.fps_ms = 1000 / 60;
+      this.fps_ms = 1000 / 55;
 
       this.renderer = SQR.Renderer("#gl", {
         antialias: true,
@@ -139,7 +138,7 @@ export default {
         document.addEventListener("mouseup", this._onInteractionEnd, false);
       }
 
-     
+
       Pressure.set("#app", {
         start: function(event) {
           // this is called on force start
@@ -156,7 +155,7 @@ export default {
       });
 
       this.cover = 0;
-     
+
       this.resize();
 
       this.t = 0.0;
@@ -256,7 +255,6 @@ export default {
     render(timestamp) {
 
       requestAnimationFrame(this.render);
-
       // calc elapsed time since last loop
       this.now = window.performance.now();
       var delta = this.now - this.then;
@@ -266,13 +264,10 @@ export default {
         // Get ready for next frame by setting then=now, but also adjust for your
         // specified fpsInterval not being a multiple of RAF's interval (16.7ms)
         this.then = this.now - delta % this.fps_ms;
-
-        //console.log("****", this.uForce)
-       
         this.rawFBO.bind();
-         
+
         this.renderer.render(this.root, this.camera);
-  this.shader.setUniform("uForce", this.uForce);
+        this.shader.setUniform("uForce", this.uForce);
         this.postFBO.bind();
         this.renderer.renderToScreen();
         this.context.gl.viewport( 0, 0, this.context.canvas.width, this.context.canvas.height );

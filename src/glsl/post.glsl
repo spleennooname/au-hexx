@@ -1,6 +1,6 @@
 //#vertex
 
-precision mediump float;
+precision highp float;
 
 attribute vec2 aPosition;
 attribute vec2 aUV;
@@ -14,7 +14,7 @@ void main(void) {
 
 //#fragment
 
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uTexture;
 uniform float uTime;
@@ -32,7 +32,7 @@ void main( void ) {
   vec4 sum = vec4( 0.0 );
   float vv = v * abs( r - vUV.y );
 
-  
+
   sum += texture2D( uTexture, vec2( vUV.x, vUV.y - 4.0 * vv ) ) * 0.051;
   sum += texture2D( uTexture, vec2( vUV.x, vUV.y - 3.0 * vv ) ) * 0.0918;
   sum += texture2D( uTexture, vec2( vUV.x, vUV.y - 2.0 * vv ) ) * 0.12245;
