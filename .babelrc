@@ -1,6 +1,14 @@
 {
+  "plugins": [
+    "babel-plugin-syntax-dynamic-import"
+  ],
   "presets": [
-    ["env", { "modules": false }],
-    "stage-3"
+    [
+      "@babel/preset-env", {
+        "targets": {
+          "browsers": ["last 2 versions", "> 5% in IT"]
+        }
+      }
+    ]
   ]
 }
