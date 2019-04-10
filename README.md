@@ -2,7 +2,9 @@
 
 > crazy monolith-like Webgl Demo for 4 DEV2108
 
-[![](auhexx.png)](http://devx.ddd.it/en/experiment/5 "A BLOB")
+[![](https://spleennooname.github.io/au-hexx/au.png)](http://devx.ddd.it/en/experiment/5 "Au Hexx")
+
+[demo](https://spleennooname.github.io/au-hexx/dist/index.html)
 
 ## Build Setup
 
