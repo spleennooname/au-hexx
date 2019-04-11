@@ -1,12 +1,14 @@
 # Au-Hexx
 
-> crazy monolith-like Webgl Demo for 4 DEV2108
+> crazy monolith-like Webgl Demo for 4 DEVX2108
 
-[![](https://spleennooname.github.io/au-hexx/au.png)](http://devx.ddd.it/en/experiment/5 "Au Hexx")
+[![AU-HEXX](https://spleennooname.github.io/au-hexx/au.png)](http://devx.ddd.it/en/experiment/5 "Au Hexx")
 
-[demo](https://spleennooname.github.io/au-hexx/dist/index.html)
+# demo
 
-## Build Setup
+[au-hexx](https://spleennooname.github.io/au-hexx/dist/index.html)
+
+## setup
 
 ``` bash
 # install dependencies
@@ -21,12 +23,12 @@ npm run build
 
 ## changelog
 
-* 02/2018, first release for DEVX!!
+* 02/2018, first release for DEVX 2018!!
 
-* 04/2019, rebuild from scratch with new techniques acquired in the while. new features:
+* 04/2019, massive rebuild-from-scratch with new techniques acquired in the while. New features:
   - A lot GSL optimizations (many computations shifted in the vertex shader)
   - remove VueJS
-  - built with TwglJS
+  - builtWith [TwglJS](http://twgljs.org)
   - FBO ping pong buffering
-  - detect-gpu for sniffing, providing scalability choices
-  - update deps with Webpack, etc
+  - [detect-gpu](https://www.npmjs.com/package/detect-gpu) for sniffing, providing scalability choices
+  - update deps with Webpack, etc.

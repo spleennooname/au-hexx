@@ -10,6 +10,8 @@ import { getGPUTier } from 'detect-gpu';
 import { TweenMax } from 'gsap';
 import * as twgl from 'twgl.js';
 
+const isLog = false;
+
 let canvas,
     gl,
     GPUTier,
@@ -38,12 +40,34 @@ let now = 0,
 let SIZE = 512;
 // utils
 
+function getGPU() {
+  const a = GPUTier.tier.split("_");
+
+  return {
+    levelTier: parseInt(a[3], 10),
+    isMobile: a.findIndex(k => k === 'MOBILE') !== -1,
+    isDesk: a.findIndex(k => k === 'DESKTOP') !== -1
+  };
+}
+
 function getBestPixelRatio() {
-  return GPUTier.tier.indexOf('MOBILE_TIER_0') !== -1 || (GPUTier.tier.indexOf('MOBILE_TIER_1') !== -1 && window.devicePixelRatio > 1) ? 1 : window.devicePixelRatio;
+  let pxratio = 1;
+  let gpu = getGPU();
+  if (window.devicePixelRatio > 1 && gpu.isMobile && gpu.levelTier === 2 ) pxratio =  1.25;
+  if (window.devicePixelRatio > 1 && gpu.isMobile && gpu.levelTier > 2) pxratio = window.devicePixelRatio
+  return pxratio;
 }
 
 function getBestFPS() {
-  return GPUTier.tier.indexOf('MOBILE_TIER_1') !== -1 && window.devicePixelRatio >= 1 ? 40 : 60;
+  let fps = 33;
+  let gpu = getGPU();
+  if (gpu.isMobile && gpu.levelTier <= 1) {
+    SIZE = 320
+  }
+  if (gpu.isMobile && gpu.levelTier >= 2) {
+    fps = 60;
+  }
+  return fps;
 }
 
 function setMousePos(e) {
@@ -117,11 +141,13 @@ function init() {
   pixelRatio = getBestPixelRatio();
 
   fps = getBestFPS();
+
+
   interval = 1000 / fps;
 
- /*  stats = new Stats();
+  stats = new Stats();
   stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-  document.body.appendChild(stats.domElement); */
+  document.body.appendChild(stats.domElement);
 
   gl = twgl.getContext(canvas, { depth: false, antialiasing: false });
 
@@ -153,11 +179,23 @@ function init() {
   twgl.bindFramebufferInfo(gl, fb1);
   twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
 
-   /*document.querySelector('.log').innerHTML =
-     'devicePixelRatio=' + window.devicePixelRatio + ', applied: ' + getBestPixelRatio() + ' tier=' + GPUTier.tier + ' type=' + GPUTier.type
-   + '<br/>' + window.innerWidth
-   + '<br/>' + canvas.width
-   + '<br/>' + canvas.clientWidth*/
+  if (isLog) {
+    document.querySelector('.log').innerHTML =
+      'devicePixelRatio=' +
+      window.devicePixelRatio +
+      ', applied: ' +
+      getBestPixelRatio() +
+      ' tier=' +
+      GPUTier.tier +
+      ' type=' +
+      GPUTier.type +
+      '<br/>' +
+      window.innerWidth +
+      '<br/>' +
+      canvas.width +
+      '<br/>' +
+      canvas.clientWidth;
+  }
 
   run();
 }
@@ -168,9 +206,9 @@ function run() {
   if (delta > interval) {
     then = now - (delta % interval);
     let t = now / 1000;
-    //stats.begin();
+    stats.begin();
     render(t);
-    //stats.end();
+    stats.end();
   }
   rafID = requestAnimationFrame(run);
 }
