@@ -17,12 +17,15 @@ varying mat3 rotation;
 #define R uResolution
 #define time uTime
 #define PI 3.141
-#define COLOR_GLOW vec3(1.0, 0.4, 0.0)
-#define COLOR_DOOM vec3(1.0, 0.3, 0.0)
+
 #define LOOK_AT vec3(1., 0., 0.)
 #define UP vec3(0., 0., 0.75)
-#define BACKGROUND vec3(1.0, 0.25, 0.0)
-#define MIN_DIST 10.
+
+#define COLOR_GLOW vec4(1.0, 0.4, 0.0, 1.0)
+#define COLOR_DOOM vec4(1.0, 0.4, 0.0, 1.0)
+#define COLOR_BACKGROUND vec4(0.25, 0.0, 0.0, 1.0)
+
+#define MIN_DIST 100.
 #define NUM_ITERATIONS 15
 
 // structures
@@ -32,7 +35,6 @@ struct Ray {
   vec3 dir;
 };
 
-
 /* float hash(float f) {
   return fract(sin(f * 32.34182) * 43758.5400);
 }
@@ -41,22 +43,20 @@ float hash(vec2 p) {
   return fract(sin(dot(p.xy, vec2(12.9898, 78.233))) * 43758.5453);
 } */
 
-vec3 tunnel(sampler2D texture, vec2 R, float t) {
+vec4 tunnel(sampler2D texture, vec2 R, float t) {
   float h = 0.25;
-  vec3 col = vec3(0.0);
   vec2 p = -1.0 + 2.0 * (gl_FragCoord.xy / R.xy);
   vec2 tx_uv = vec2(p.x / p.y, 1.5 * t + h / abs(p.x) );
-  col = texture2D(texture, tx_uv).xyz * p.y * p.y;
-  return col;
+  return texture2D(texture, tx_uv) * p.y * p.y;
 }
 
-vec3 bg(vec3 dir) {
-  vec3 c = vec3(0.);
+/* vec4 bg(vec3 dir) {
+  vec4 c = vec4(0.);
   return c;
-}
+} */
 
-vec3 background(vec3 dir) {
-  return BACKGROUND * bg(dir);
+vec4 background(vec3 dir) {
+  return COLOR_BACKGROUND;//* bg(dir);
 }
 
 float sdHexPrism(vec3 p, vec2 h) {
@@ -104,7 +104,7 @@ Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspec
   return ray;
 }
 
-vec3 selfReflect(Ray ray) {
+vec4 selfReflect(Ray ray) {
 
   float dist = 0.01;
 
@@ -126,10 +126,10 @@ vec3 selfReflect(Ray ray) {
   if (m < 0.01) {
     vec3 n = normal(pos);
     vec3 r = reflect(ray.dir, n);
-    vec3 refl = background(r);
+    vec4 refl = background(r);
     float rf = 0.8 - abs(dot(ray.dir, n)) * .4;
     rf *= rf;
-    return refl * rf * 1.5;
+    return refl * rf * 1.75;
   }
 
   float glow = 0.1 / minDist;
@@ -137,7 +137,7 @@ vec3 selfReflect(Ray ray) {
   return background(ray.dir) + glow * COLOR_GLOW;
 }
 
-vec3 render(Ray ray) {
+vec4 render(Ray ray) {
 
   float dist = 0.01;
 
@@ -157,7 +157,7 @@ vec3 render(Ray ray) {
   if (m < 0.01) {
     vec3 n = normal(pos);
     vec3 r = reflect(ray.dir, n);
-    vec3 refl = selfReflect(Ray(pos, r));
+    vec4 refl = selfReflect(Ray(pos, r));
     float rf = .8 - abs(dot(ray.dir, n)) * .4;
     rf *= rf;
     return refl * rf * 1.75;
@@ -173,13 +173,11 @@ void main() {
 
   vec2 uv = gl_FragCoord.xy / R.xy;
 
-  vec3 col = BACKGROUND;
-
-  vec3 doom = COLOR_DOOM * tunnel(uPatternTexture, R, time * .5);
+  vec4 doom = COLOR_DOOM * tunnel(uPatternTexture, R, time * .5);
 
   Ray ray = createRay(cameraPos, LOOK_AT, UP, uv, 70., R.x / R.y );
 
-  col = render(ray);
+  vec4 col = render(ray);
 
-  gl_FragColor = mix( vec4( col +  doom, .75), texture2D(uTexture, uv), 0.5);
+  gl_FragColor = mix(col + doom, texture2D(uTexture, uv), .65);
 }

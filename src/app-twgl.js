@@ -10,23 +10,23 @@ import { getGPUTier } from 'detect-gpu';
 import { TweenMax } from 'gsap';
 import * as twgl from 'twgl.js';
 
-const isLog = false;
+const IS_LOG = true;
 
 let canvas,
-    gl,
-    GPUTier,
-    positionBuffer,
-    fb1,
-    fb2,
-    temp,
-    rafID = -1,
-    pixelRatio = 0,
-    texture,
-    displayWidth,
-    displayHeight,
-    programInfo,
-    postInfo,
-    stats;
+  gl,
+  GPUTier,
+  positionBuffer,
+  fb1,
+  fb2,
+  tmp,
+  rafID = -1,
+  pixelRatio = 0,
+  texturePattern,
+  displayWidth,
+  displayHeight,
+  programInfo,
+  postInfo,
+  stats;
 
 let mouse = [];
 
@@ -42,7 +42,6 @@ let SIZE = 512;
 
 function getGPU() {
   const a = GPUTier.tier.split("_");
-
   return {
     levelTier: parseInt(a[3], 10),
     isMobile: a.findIndex(k => k === 'MOBILE') !== -1,
@@ -51,21 +50,29 @@ function getGPU() {
 }
 
 function getBestPixelRatio() {
-  let pxratio = 1;
+  let ratio = 1;
   let gpu = getGPU();
   if (window.devicePixelRatio > 1 && gpu.isMobile && gpu.levelTier === 2 ) pxratio =  1.25;
   if (window.devicePixelRatio > 1 && gpu.isMobile && gpu.levelTier > 2) pxratio = window.devicePixelRatio
-  return pxratio;
+  return ratio;
 }
 
 function getBestFPS() {
   let fps = 33;
   let gpu = getGPU();
   if (gpu.isMobile && gpu.levelTier <= 1) {
-    SIZE = 320
+    SIZE = 320;
+    fps = 33;
   }
+  else
   if (gpu.isMobile && gpu.levelTier >= 2) {
     fps = 60;
+    SIZE = 512;
+  }
+  else
+  if (gpu.isDesk && gpu.levelTier >= 1) {
+    fps = 60;
+    SIZE = 512;
   }
   return fps;
 }
@@ -95,20 +102,12 @@ function demo() {
     return;
   }
 
-  canvas.addEventListener( 'webglcontextlost', event => {
-      console.warn('lost');
-      event.preventDefault();
-      stop();
-    },
-    false
-  );
+  document.body.addEventListener('touchmove', event => {
+    event.preventDefault();
+  }, false);
 
-  canvas.addEventListener( 'webglcontextrestored', event => {
-      console.warn('restored');
-      init();
-    },
-    false
-  );
+  canvas.addEventListener( 'webglcontextlost', lost, false);
+  canvas.addEventListener( 'webglcontextrestored', restore, false);
 
   canvas.addEventListener('mousemove', setMousePos);
 
@@ -124,24 +123,27 @@ function demo() {
   canvas.addEventListener('touchstart', handleTouch, {passive: false});
   canvas.addEventListener('touchmove', handleTouch, { passive: false });
 
-  TweenMax.to(document.querySelector('.cover'), 5, { delay: 1, autoAlpha: 0 });
+  initGL();
 
-  init();
+  TweenMax.to(document.querySelector('.cover'), 5, {
+   /*  onStart: () => { initGL() }, */
+    delay: 1,
+    autoAlpha: 0
+  });
+
   //gl.getExtension('WEBGL_lose_context').restoreContext();
   //gl.getExtension('WEBGL_lose_context').loseContext();
 }
 
-function init() {
+function initGL() {
+
   GPUTier = getGPUTier({
     mobileBenchmarkPercentages: [15, 35, 30, 20], // (Default) [TIER_0, TIER_1, TIER_2, TIER_3]
-    desktopBenchmarkPercentages: [10, 40, 30, 20], // (Default) [TIER_0, TIER_1, TIER_2, TIER_3]
+    desktopBenchmarkPercentages: [15, 35, 30, 20], // (Default) [TIER_0, TIER_1, TIER_2, TIER_3]
   });
 
-
   pixelRatio = getBestPixelRatio();
-
   fps = getBestFPS();
-
 
   interval = 1000 / fps;
 
@@ -151,8 +153,8 @@ function init() {
 
   gl = twgl.getContext(canvas, { depth: false, antialiasing: false });
 
-  texture = twgl.createTextures(gl, {
-    pattern: { src: './hex.jpg', mag: gl.NEAREST, min: gl.LINEAR, wrap: gl.REPEAT }
+  texturePattern = twgl.createTexture(gl, {
+    src: './hex.jpg', mag: gl.NEAREST, min: gl.LINEAR, wrap: gl.REPEAT,
   });
 
   fb1 = twgl.createFramebufferInfo(gl, null, SIZE, SIZE);
@@ -165,7 +167,7 @@ function init() {
     position: { data: [-1, -1, -1, 4, 4, -1], numComponents: 2 },
   });
 
-  // -----
+  // 1st draw, fb1
 
   flag = false;
 
@@ -173,28 +175,33 @@ function init() {
   twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer);
   twgl.setUniforms(programInfo, {
     uTime: 0,
-    uPatternTexture: texture.pattern,
+    uTexture: twgl.createTexture(gl),
+    uPatternTexture: texturePattern,
     uResolution: [displayWidth, displayHeight],
   });
   twgl.bindFramebufferInfo(gl, fb1);
   twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
 
-  if (isLog) {
+  if (IS_LOG) {
     document.querySelector('.log').innerHTML =
       'devicePixelRatio=' +
       window.devicePixelRatio +
-      ', applied: ' +
-      getBestPixelRatio() +
       ' tier=' +
       GPUTier.tier +
       ' type=' +
       GPUTier.type +
       '<br/>' +
-      window.innerWidth +
+      'applied: ' +
+      'px ratio: ' +
+      pixelRatio +
+      ', fps: ' +
+      fps +
       '<br/>' +
-      canvas.width +
+      '('+window.innerWidth + "," + window.innerHeight +")" +
       '<br/>' +
-      canvas.clientWidth;
+      '('+canvas.width + "," + canvas.height +")" +
+      '<br/>' +
+      '(buffer size: ' + SIZE +")"
   }
 
   run();
@@ -209,6 +216,7 @@ function run() {
     stats.begin();
     render(t);
     stats.end();
+
   }
   rafID = requestAnimationFrame(run);
 }
@@ -221,14 +229,12 @@ function resize() {
   //console.log( aspectRatio)
   displayWidth = SIZE//Math.floor(canvas.clientWidth * pixelRatio);
   displayHeight = SIZE; //Math.floor(canvas.clientHeight * pixelRatio);
-
   // Check if the canvas is not the same size.
   if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
     // Make the canvas the same size
     canvas.width = displayHeight;
     canvas.height = displayHeight;
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-   // console.log(canvas.clientWidth, gl.drawingBufferHeight, gl.canvas.width);
   }
 }
 
@@ -236,33 +242,34 @@ function render(time) {
 
   resize();
 
+  // draw fb1 1st step in fb2
   gl.useProgram(programInfo.program);
-
   twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer);
   twgl.setUniforms(programInfo, {
     uTime: time,
-    uPatternTexture: texture.pattern,
+    uPatternTexture: texturePattern,
     uTexture: fb1.attachments[0],
     uResolution: [displayWidth, displayHeight],
   });
   twgl.bindFramebufferInfo(gl, fb2);
   twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
 
+  // draw fb1 in fb2
   gl.useProgram(postInfo.program);
   twgl.setBuffersAndAttributes(gl, postInfo, positionBuffer);
   twgl.setUniforms(postInfo, {
-      uResolution: [displayWidth, displayHeight],
-      uTexture: fb2.attachments[0],
+    uTime: time,
+    uResolution: [displayWidth, displayHeight],
+    uTexture: fb1.attachments[0],
   });
   twgl.bindFramebufferInfo(gl, null);
   twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
 
   // ping-pong buffers
-  temp = fb1;
+  tmp = fb1;
   fb1 = fb2;
-  fb2 = temp;
+  fb2 = tmp;
 
-  //flag = !flag;
 }
 
 function start() {
@@ -277,6 +284,17 @@ function stop() {
 
 function destroy() {
   stop();
+}
+
+function lost(e) {
+   console.warn('lost');
+   event.preventDefault();
+   stop();
+}
+
+function restore(e) {
+  console.warn('restored');
+  initGL();
 }
 
 demo();

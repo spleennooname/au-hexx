@@ -34,7 +34,7 @@ void main() {
   float yt = floor(time * .5) + clamp(fract(time * .5) * 5., 0., 1.);
   float zt = time * 0.1;
 
-  rotation = rotateX(xt * PI / 2.) * rotateY(yt * PI / 2.) * rotateZ(zt * PI);
+  rotation = rotateX(xt * PI * .5) * rotateY(yt * PI * .5) * rotateZ(zt * PI);
 
   cameraPos = vec3(-9., 5. * sin(time * .5), -1. * sin(time * .25) / time);
 
