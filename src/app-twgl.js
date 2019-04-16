@@ -49,32 +49,37 @@ function getGPU() {
   };
 }
 
-function getBestPixelRatio() {
+function getBestGPUSettings() {
+  let fps = 33;
+  let size = 320;
   let ratio = 1;
   let gpu = getGPU();
-  if (window.devicePixelRatio > 1 && gpu.isMobile && gpu.levelTier === 2 ) pxratio =  1.25;
-  if (window.devicePixelRatio > 1 && gpu.isMobile && gpu.levelTier > 2) pxratio = window.devicePixelRatio
-  return ratio;
-}
-
-function getBestFPS() {
-  let fps = 33;
-  let gpu = getGPU();
-  if (gpu.isMobile && gpu.levelTier <= 1) {
-    SIZE = 320;
-    fps = 33;
-  }
-  else
-  if (gpu.isMobile && gpu.levelTier >= 2) {
+  if (gpu.isMobile) {
+    if (gpu.levelTier === 0) {
+      size = 320;
+      fps = 30
+    }
+    else
+    if (gpu.levelTier === 1) {
+      size = 320;
+      fps = 35;
+    } else if (gpu.levelTier === 2) {
+      size = 400;
+      fps = 40;
+    } else if (gpu.levelTier === 3) {
+      size = 512;
+      fps = 60;
+      ratio = window.devicePixelRatio;
+    }
+  } else if (gpu.isDesk) {
     fps = 60;
-    SIZE = 512;
+    size = 600;
   }
-  else
-  if (gpu.isDesk && gpu.levelTier >= 1) {
-    fps = 60;
-    SIZE = 512;
-  }
-  return fps;
+  return {
+    fps: fps,
+    size: size,
+    ratio: ratio,
+  };
 }
 
 function setMousePos(e) {
@@ -142,8 +147,10 @@ function initGL() {
     desktopBenchmarkPercentages: [15, 35, 30, 20], // (Default) [TIER_0, TIER_1, TIER_2, TIER_3]
   });
 
-  pixelRatio = getBestPixelRatio();
-  fps = getBestFPS();
+  const gpu = getBestGPUSettings();
+  SIZE = gpu.size;
+  fps = gpu.fps;
+  pixelRatio = gpu.ratio;
 
   interval = 1000 / fps;
 
@@ -216,7 +223,6 @@ function run() {
     stats.begin();
     render(t);
     stats.end();
-
   }
   rafID = requestAnimationFrame(run);
 }
