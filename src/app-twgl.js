@@ -6,7 +6,7 @@ import vs from './glsl/vert.glsl';
 import fs from './glsl/hex.glsl';
 import ps from './glsl/post.glsl';
 
-import { getGPUTier } from 'detect-gpu';
+import GPUTools from './GPUTools';
 import { TweenMax } from 'gsap';
 import * as twgl from 'twgl.js';
 
@@ -14,7 +14,7 @@ const IS_LOG = true;
 
 let canvas,
   gl,
-  GPUTier,
+  gpuTools,
   positionBuffer,
   fb1,
   fb2,
@@ -37,60 +37,17 @@ let now = 0,
   interval = 1000 / fps,
   flag = false;
 
-let SIZE = 512;
-// utils
-
-function getGPU() {
-  const a = GPUTier.tier.split("_");
-  return {
-    levelTier: parseInt(a[3], 10),
-    isMobile: a.findIndex(k => k === 'MOBILE') !== -1,
-    isDesk: a.findIndex(k => k === 'DESKTOP') !== -1
-  };
-}
-
-function getBestGPUSettings() {
-  let fps = 33;
-  let size = 320;
-  let ratio = 1;
-  let gpu = getGPU();
-  if (gpu.isMobile) {
-    if (gpu.levelTier === 0) {
-      size = 320;
-      fps = 30
-    }
-    else
-    if (gpu.levelTier === 1) {
-      size = 320;
-      fps = 35;
-    } else if (gpu.levelTier === 2) {
-      size = 400;
-      fps = 40;
-    } else if (gpu.levelTier === 3) {
-      size = 512;
-      fps = 60;
-      ratio = window.devicePixelRatio;
-    }
-  } else if (gpu.isDesk) {
-    fps = 60;
-    size = 600;
-  }
-  return {
-    fps: fps,
-    size: size,
-    ratio: ratio,
-  };
-}
+let bufferSize = 512;
 
 function setMousePos(e) {
   mouse[0] = e.clientX / gl.canvas.clientWidth;
   mouse[1] = 1 - e.clientY / gl.canvas.clientHeight;
 }
 
- function handleTouch(e) {
-    e.preventDefault();
-    setMousePos(e.touches[0]);
-  }
+function handleTouch(e) {
+  e.preventDefault();
+  setMousePos(e.touches[0]);
+}
 
 function demo() {
   canvas = document.querySelector('#canvas');
@@ -107,33 +64,37 @@ function demo() {
     return;
   }
 
-  document.body.addEventListener('touchmove', event => {
-    event.preventDefault();
-  }, false);
+  document.body.addEventListener(
+    'touchmove',
+    event => {
+      event.preventDefault();
+    },
+    false
+  );
 
-  canvas.addEventListener( 'webglcontextlost', lost, false);
-  canvas.addEventListener( 'webglcontextrestored', restore, false);
+  canvas.addEventListener('webglcontextlost', lost, false);
+  canvas.addEventListener('webglcontextrestored', restore, false);
 
   canvas.addEventListener('mousemove', setMousePos);
 
   canvas.addEventListener('mouseleave', () => {
-    mouse = [0.5, 0.5]
+    mouse = [0.5, 0.5];
   });
 
   canvas.addEventListener('mousedown', e => {
-    console.log(e)
+    console.log(e);
   });
 
   canvas.addEventListener('contextmenu', e => e.preventDefault());
-  canvas.addEventListener('touchstart', handleTouch, {passive: false});
+  canvas.addEventListener('touchstart', handleTouch, { passive: false });
   canvas.addEventListener('touchmove', handleTouch, { passive: false });
 
   initGL();
 
   TweenMax.to(document.querySelector('.cover'), 5, {
-   /*  onStart: () => { initGL() }, */
+    /*  onStart: () => { initGL() }, */
     delay: 1,
-    autoAlpha: 0
+    autoAlpha: 0,
   });
 
   //gl.getExtension('WEBGL_lose_context').restoreContext();
@@ -141,14 +102,10 @@ function demo() {
 }
 
 function initGL() {
+  gpuTools = new GPUTools();
 
-  GPUTier = getGPUTier({
-    mobileBenchmarkPercentages: [15, 35, 30, 20], // (Default) [TIER_0, TIER_1, TIER_2, TIER_3]
-    desktopBenchmarkPercentages: [15, 35, 30, 20], // (Default) [TIER_0, TIER_1, TIER_2, TIER_3]
-  });
-
-  const gpu = getBestGPUSettings();
-  SIZE = gpu.size;
+  const gpu = gpuTools.getBestGPUSettings();
+  bufferSize = gpu.bufferSize;
   fps = gpu.fps;
   pixelRatio = gpu.ratio;
 
@@ -161,11 +118,14 @@ function initGL() {
   gl = twgl.getContext(canvas, { depth: false, antialiasing: false });
 
   texturePattern = twgl.createTexture(gl, {
-    src: './hex.jpg', mag: gl.NEAREST, min: gl.LINEAR, wrap: gl.REPEAT,
+    src: './hex.jpg',
+    mag: gl.LINEAR,
+    min: gl.LINEAR,
+    wrap: gl.REPEAT,
   });
 
-  fb1 = twgl.createFramebufferInfo(gl, null, SIZE, SIZE);
-  fb2 = twgl.createFramebufferInfo(gl, null, SIZE, SIZE);
+  fb1 = twgl.createFramebufferInfo(gl, null, bufferSize, bufferSize);
+  fb2 = twgl.createFramebufferInfo(gl, null, bufferSize, bufferSize);
 
   programInfo = twgl.createProgramInfo(gl, [vs, fs]);
   postInfo = twgl.createProgramInfo(gl, [vs, ps]);
@@ -175,8 +135,6 @@ function initGL() {
   });
 
   // 1st draw, fb1
-
-  flag = false;
 
   gl.useProgram(programInfo.program);
   twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer);
@@ -194,21 +152,31 @@ function initGL() {
       'devicePixelRatio=' +
       window.devicePixelRatio +
       ' tier=' +
-      GPUTier.tier +
+      gpuTools.gpuTier.levelTier +
       ' type=' +
-      GPUTier.type +
+      gpuTools.gpuTier.type +
       '<br/>' +
       'applied: ' +
-      'px ratio: ' +
+      'pixel ratio=' +
       pixelRatio +
-      ', fps: ' +
+      ', fps=' +
       fps +
       '<br/>' +
-      '('+window.innerWidth + "," + window.innerHeight +")" +
+      '(' +
+      window.innerWidth +
+      ',' +
+      window.innerHeight +
+      ')' +
       '<br/>' +
-      '('+canvas.width + "," + canvas.height +")" +
+      '(' +
+      canvas.width +
+      ',' +
+      canvas.height +
+      ')' +
       '<br/>' +
-      '(buffer size: ' + SIZE +")"
+      '(buffer bufferSize: ' +
+      bufferSize +
+      ')';
   }
 
   run();
@@ -228,16 +196,16 @@ function run() {
 }
 
 function resize() {
-  // Lookup the size the browser is displaying the canvas in CSS pixels
-  // and compute a size needed to make our drawingbuffer match it in
+  // Lookup the bufferSize the browser is displaying the canvas in CSS pixels
+  // and compute a bufferSize needed to make our drawingbuffer match it in
   // device pixels.
   //const aspectRatio = window.innerWidth / window.innerHeight;
   //console.log( aspectRatio)
-  displayWidth = SIZE//Math.floor(canvas.clientWidth * pixelRatio);
-  displayHeight = SIZE; //Math.floor(canvas.clientHeight * pixelRatio);
-  // Check if the canvas is not the same size.
+  displayWidth = bufferSize; //Math.floor(canvas.clientWidth * pixelRatio);
+  displayHeight = bufferSize; //Math.floor(canvas.clientHeight * pixelRatio);
+  // Check if the canvas is not the same bufferSize.
   if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-    // Make the canvas the same size
+    // Make the canvas the same bufferSize
     canvas.width = displayHeight;
     canvas.height = displayHeight;
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -245,7 +213,6 @@ function resize() {
 }
 
 function render(time) {
-
   resize();
 
   // draw fb1 1st step in fb2
@@ -275,7 +242,6 @@ function render(time) {
   tmp = fb1;
   fb1 = fb2;
   fb2 = tmp;
-
 }
 
 function start() {
@@ -293,9 +259,9 @@ function destroy() {
 }
 
 function lost(e) {
-   console.warn('lost');
-   event.preventDefault();
-   stop();
+  console.warn('lost');
+  event.preventDefault();
+  stop();
 }
 
 function restore(e) {

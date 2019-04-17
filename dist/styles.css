@@ -69,6 +69,12 @@ body > div:not(.demo) {
   top: 0;
   right: 0; }
 
+.v {
+  font-size: 13px;
+  position: relative;
+  top: -22px;
+  left: 2px; }
+
 .cover {
   position: fixed;
   display: flex;
@@ -82,13 +88,13 @@ body > div:not(.demo) {
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 1.25rem;
+  font-size: 14px;
   z-index: 666;
   top: 0;
   left: 0;
   background-color: rgba(0, 0, 0, 0.85); }
   .cover > blockquote {
-    width: 40vw; }
+    width: 60vw; }
   .cover > span {
     font-size: 0.85rem; }
 

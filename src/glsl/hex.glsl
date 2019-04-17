@@ -50,11 +50,6 @@ vec4 tunnel(sampler2D texture, vec2 R, float t) {
   return texture2D(texture, tx_uv) * p.y * p.y;
 }
 
-/* vec4 bg(vec3 dir) {
-  vec4 c = vec4(0.);
-  return c;
-} */
-
 vec4 background(vec3 dir) {
   return COLOR_BACKGROUND;//* bg(dir);
 }

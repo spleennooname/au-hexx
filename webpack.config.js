@@ -27,6 +27,7 @@ const config = {
 
   devServer: {
     hot: true,
+    https: true,
     watchOptions: { poll: true },
     contentBase: resolve('dist'),
   },
