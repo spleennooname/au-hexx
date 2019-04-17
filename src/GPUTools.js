@@ -12,7 +12,7 @@ export default class GPUTools {
       levelTier: parseInt(a[3], 10),
       isMobile: a.findIndex(k => k === 'MOBILE') !== -1,
       isDesk: a.findIndex(k => k === 'DESKTOP') !== -1,
-      type: a.findIndex(k => k === 'DESKTOP') !== -1 ? 'desktop' : 'mobile'
+      type: a.findIndex(k => k === 'DESKTOP') !== -1 ? 'desktop' : 'mobile',
     };
   }
 
@@ -32,15 +32,16 @@ export default class GPUTools {
         bufferSize = 400;
         fps = 40;
       } else if (this.gpuTier.levelTier === 3) {
-        bufferSize = 512;
         fps = 60;
         ratio = window.devicePixelRatio;
+        bufferSize = 512 * ratio;
       }
     } else if (this.gpuTier.isDesk) {
       fps = 60;
       bufferSize = 600;
       if (this.gpuTier.levelTier >= 2) {
         ratio = window.devicePixelRatio;
+        bufferSize = 512 * ratio;
       }
     }
 

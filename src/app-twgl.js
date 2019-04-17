@@ -119,9 +119,10 @@ function initGL() {
 
   texturePattern = twgl.createTexture(gl, {
     src: './hex.jpg',
+    level: false,
     mag: gl.LINEAR,
     min: gl.LINEAR,
-    wrap: gl.REPEAT,
+    wrap: gl.REPEAT
   });
 
   fb1 = twgl.createFramebufferInfo(gl, null, bufferSize, bufferSize);
@@ -140,7 +141,6 @@ function initGL() {
   twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer);
   twgl.setUniforms(programInfo, {
     uTime: 0,
-    uTexture: twgl.createTexture(gl),
     uPatternTexture: texturePattern,
     uResolution: [displayWidth, displayHeight],
   });
@@ -199,10 +199,11 @@ function resize() {
   // Lookup the bufferSize the browser is displaying the canvas in CSS pixels
   // and compute a bufferSize needed to make our drawingbuffer match it in
   // device pixels.
-  //const aspectRatio = window.innerWidth / window.innerHeight;
-  //console.log( aspectRatio)
-  displayWidth = bufferSize; //Math.floor(canvas.clientWidth * pixelRatio);
-  displayHeight = bufferSize; //Math.floor(canvas.clientHeight * pixelRatio);
+  const displayAspectRatio = window.innerWidth / window.innerHeight;
+
+  displayWidth = Math.floor(bufferSize);
+  displayHeight = Math.floor(bufferSize);
+
   // Check if the canvas is not the same bufferSize.
   if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
     // Make the canvas the same bufferSize
