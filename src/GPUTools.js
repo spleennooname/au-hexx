@@ -17,6 +17,7 @@ export default class GPUTools {
   }
 
   getBestGPUSettings() {
+
     let fps = 33;
     let bufferSize = 320;
     let ratio = 1;
@@ -37,8 +38,10 @@ export default class GPUTools {
         bufferSize = 512 * ratio;
       }
     } else if (this.gpuTier.isDesk) {
+
       fps = 60;
-      bufferSize = 600;
+      bufferSize = 512;
+
       if (this.gpuTier.levelTier >= 2) {
         ratio = window.devicePixelRatio;
         bufferSize = 512 * ratio;
@@ -48,7 +51,7 @@ export default class GPUTools {
     return {
       fps: fps,
       bufferSize: bufferSize,
-      ratio: ratio,
+      ratio: ratio
     };
   }
 }

@@ -2,6 +2,8 @@
 
 const webpack = require('webpack');
 const path = require('path');
+
+const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 function resolve(dir) {
@@ -16,7 +18,7 @@ const config = {
   mode: process.env.NODE_ENV,
 
   entry: {
-    app: './src/app-twgl.js'
+    app: './src/app-twgl.js',
   },
 
   output: {
@@ -36,10 +38,17 @@ const config = {
   optimization: {
     minimize: isProduction(),
     noEmitOnErrors: true,
-    moduleIds: 'total-size',
-    /*  minimizer: [
-       new OptimizeCSSAssetsPlugin({})
-     ] */
+    namedModules: true,
+    minimizer: [
+      new TerserPlugin({
+        cache: true,
+        parallel: true,
+        sourceMap: false, // Must be set to true if using source-maps in production
+        terserOptions: {
+          // https://github.com/webpack-contrib/terser-webpack-plugin#terseroptions
+        },
+      }),
+    ],
   },
 
   module: {

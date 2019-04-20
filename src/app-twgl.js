@@ -122,7 +122,7 @@ function initGL() {
     level: false,
     mag: gl.LINEAR,
     min: gl.LINEAR,
-    wrap: gl.REPEAT
+    wrap: gl.REPEAT,
   });
 
   fb1 = twgl.createFramebufferInfo(gl, null, bufferSize, bufferSize);
@@ -146,38 +146,6 @@ function initGL() {
   });
   twgl.bindFramebufferInfo(gl, fb1);
   twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
-
-  if (IS_LOG) {
-    document.querySelector('.log').innerHTML =
-      'devicePixelRatio=' +
-      window.devicePixelRatio +
-      ' tier=' +
-      gpuTools.gpuTier.levelTier +
-      ' type=' +
-      gpuTools.gpuTier.type +
-      '<br/>' +
-      'applied: ' +
-      'pixel ratio=' +
-      pixelRatio +
-      ', fps=' +
-      fps +
-      '<br/>' +
-      '(' +
-      window.innerWidth +
-      ',' +
-      window.innerHeight +
-      ')' +
-      '<br/>' +
-      '(' +
-      canvas.width +
-      ',' +
-      canvas.height +
-      ')' +
-      '<br/>' +
-      '(buffer bufferSize: ' +
-      bufferSize +
-      ')';
-  }
 
   run();
 }
@@ -214,6 +182,38 @@ function resize() {
 }
 
 function render(time) {
+  if (IS_LOG) {
+    document.querySelector('.log').innerHTML =
+      'devicePixelRatio=' +
+      window.devicePixelRatio +
+      ' tier=' +
+      gpuTools.gpuTier.levelTier +
+      ' type=' +
+      gpuTools.gpuTier.type +
+      '<br/>' +
+      'applied: ' +
+      'pixel ratio=' +
+      pixelRatio +
+      ', fps=' +
+      fps +
+      '<br/>' +
+      '(' +
+      window.innerWidth +
+      ',' +
+      window.innerHeight +
+      ')' +
+      '<br/>' +
+      '(' +
+      canvas.width +
+      ',' +
+      canvas.height +
+      ')' +
+      '<br/>' +
+      '(buffer bufferSize: ' +
+      bufferSize +
+      ')';
+  }
+
   resize();
 
   // draw fb1 1st step in fb2
@@ -228,7 +228,7 @@ function render(time) {
   twgl.bindFramebufferInfo(gl, fb2);
   twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
 
-  // draw fb1 in fb2
+  // draw fb1 in canvas
   gl.useProgram(postInfo.program);
   twgl.setBuffersAndAttributes(gl, postInfo, positionBuffer);
   twgl.setUniforms(postInfo, {
