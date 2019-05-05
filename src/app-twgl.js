@@ -4,7 +4,8 @@ import './styles/styles.scss';
 
 import vs from './glsl/vert.glsl';
 import fs from './glsl/hex.glsl';
-import ps from './glsl/post.glsl';
+import blends from './glsl/blend.glsl';
+import draws from './glsl/draw.glsl';
 
 import GPUTools from './GPUTools';
 import { TweenMax } from 'gsap';
@@ -16,6 +17,7 @@ let canvas,
   gl,
   gpuTools,
   positionBuffer,
+  fb0,
   fb1,
   fb2,
   tmp,
@@ -25,7 +27,8 @@ let canvas,
   displayWidth,
   displayHeight,
   programInfo,
-  postInfo,
+  drawInfo,
+  blendInfo,
   stats;
 
 let mouse = [];
@@ -120,32 +123,21 @@ function initGL() {
   texturePattern = twgl.createTexture(gl, {
     src: './hex.jpg',
     level: false,
-    mag: gl.LINEAR,
-    min: gl.LINEAR,
+    minMag: gl.LINEAR,
     wrap: gl.REPEAT,
   });
 
+  fb0 = twgl.createFramebufferInfo(gl, null, bufferSize, bufferSize);
   fb1 = twgl.createFramebufferInfo(gl, null, bufferSize, bufferSize);
   fb2 = twgl.createFramebufferInfo(gl, null, bufferSize, bufferSize);
 
   programInfo = twgl.createProgramInfo(gl, [vs, fs]);
-  postInfo = twgl.createProgramInfo(gl, [vs, ps]);
+  blendInfo = twgl.createProgramInfo(gl, [vs, blends]);
+  drawInfo = twgl.createProgramInfo(gl, [vs, draws]);
 
   positionBuffer = twgl.createBufferInfoFromArrays(gl, {
     position: { data: [-1, -1, -1, 4, 4, -1], numComponents: 2 },
   });
-
-  // 1st draw, fb1
-
-  gl.useProgram(programInfo.program);
-  twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer);
-  twgl.setUniforms(programInfo, {
-    uTime: 0,
-    uPatternTexture: texturePattern,
-    uResolution: [displayWidth, displayHeight],
-  });
-  twgl.bindFramebufferInfo(gl, fb1);
-  twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
 
   run();
 }
@@ -182,6 +174,48 @@ function resize() {
 }
 
 function render(time) {
+  resize();
+
+  //www.youtube.com/watch?v=rfQ8rKGTVlg#t=31m42s THXX GREGGMANN!!!
+
+  https: // draw new frame
+  gl.useProgram(programInfo.program);
+  twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer);
+  twgl.setUniforms(programInfo, {
+    uTime: time,
+    uPatternTexture: texturePattern,
+    uResolution: [displayWidth, displayHeight],
+  });
+  twgl.bindFramebufferInfo(gl, fb0);
+  twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
+
+  // blend new frame with fb1 in fb2
+  gl.useProgram(blendInfo.program);
+  twgl.setBuffersAndAttributes(gl, blendInfo, positionBuffer);
+  twgl.setUniforms(blendInfo, {
+    uTime: time,
+    uResolution: [displayWidth, displayHeight],
+    newTexture: fb0.attachments[0],
+    oldTexture: fb1.attachments[0],
+  });
+  twgl.bindFramebufferInfo(gl, fb2);
+  twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
+
+  // draw in canvas
+  gl.useProgram(drawInfo.program);
+  twgl.setBuffersAndAttributes(gl, drawInfo, positionBuffer);
+  twgl.setUniforms(drawInfo, {
+    uTime: time,
+    uResolution: [displayWidth, displayHeight],
+    uTexture: fb2.attachments[0],
+  });
+  twgl.bindFramebufferInfo(gl, null);
+  twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
+
+  tmp = fb1;
+  fb1 = fb2;
+  fb2 = tmp;
+
   if (IS_LOG) {
     document.querySelector('.log').innerHTML =
       'devicePixelRatio=' +
@@ -213,36 +247,6 @@ function render(time) {
       bufferSize +
       ')';
   }
-
-  resize();
-
-  // draw fb1 1st step in fb2
-  gl.useProgram(programInfo.program);
-  twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer);
-  twgl.setUniforms(programInfo, {
-    uTime: time,
-    uPatternTexture: texturePattern,
-    uTexture: fb1.attachments[0],
-    uResolution: [displayWidth, displayHeight],
-  });
-  twgl.bindFramebufferInfo(gl, fb2);
-  twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
-
-  // draw fb1 in canvas
-  gl.useProgram(postInfo.program);
-  twgl.setBuffersAndAttributes(gl, postInfo, positionBuffer);
-  twgl.setUniforms(postInfo, {
-    uTime: time,
-    uResolution: [displayWidth, displayHeight],
-    uTexture: fb1.attachments[0],
-  });
-  twgl.bindFramebufferInfo(gl, null);
-  twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES);
-
-  // ping-pong buffers
-  tmp = fb1;
-  fb1 = fb2;
-  fb2 = tmp;
 }
 
 function start() {

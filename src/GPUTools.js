@@ -40,9 +40,9 @@ export default class GPUTools {
     } else if (this.gpuTier.isDesk) {
 
       fps = 60;
-      bufferSize = 512;
+      bufferSize = 6;
 
-      if (this.gpuTier.levelTier >= 2) {
+      if (this.gpuTier.levelTier >= 1) {
         ratio = window.devicePixelRatio;
         bufferSize = 512 * ratio;
       }

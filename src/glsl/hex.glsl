@@ -174,5 +174,5 @@ void main() {
 
   vec4 col = render(ray);
 
-  gl_FragColor = mix(col + doom, texture2D(uTexture, uv), .65);
+  gl_FragColor = col + doom;
 }
