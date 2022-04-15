@@ -1,7 +1,7 @@
 
 
 precision highp float;
-precision lowp int;
+precision highp int;
 
 uniform sampler2D uPatternTexture;
 uniform sampler2D uTexture;
@@ -22,11 +22,11 @@ varying mat3 rotation;
 #define UP vec3(0., 0., 0.75)
 
 #define COLOR_GLOW vec4(1.0, 0.4, 0.0, 1.0)
-#define COLOR_DOOM vec4(1.0, 0.4, 0.0, 1.0)
-#define COLOR_BACKGROUND vec4(0.25, 0.0, 0.0, 1.0)
+#define COLOR_DOOM vec4(1.0, 0.651, 0.0, 1.0)
+#define COLOR_BACKGROUND vec4(0.1804, 0.0078, 0.0078, 1.0)
 
-#define MIN_DIST 100.
-#define NUM_ITERATIONS 15
+#define MIN_DIST 80.
+#define NUM_ITERATIONS 25
 
 // structures
 
@@ -44,14 +44,15 @@ float hash(vec2 p) {
 } */
 
 vec4 tunnel(sampler2D texture, vec2 R, float t) {
-  float h = 0.25;
+  float h = 0.95;
   vec2 p = -1.0 + 2.0 * (gl_FragCoord.xy / R.xy);
-  vec2 tx_uv = vec2(p.x / p.y, 1.5 * t + h / abs(p.x) );
-  return texture2D(texture, tx_uv) * p.y * p.y;
+  vec2 newUv = vec2(p.x / p.y, 1.5 * t + h / abs(p.x) );
+  vec4 c = mix(texture2D(texture, newUv), vec4(p.y * p.y), 0.9);
+  return c;
 }
 
 vec4 background(vec3 dir) {
-  return COLOR_BACKGROUND;//* bg(dir);
+  return COLOR_BACKGROUND;
 }
 
 float sdHexPrism(vec3 p, vec2 h) {
@@ -91,7 +92,7 @@ Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspec
   vec3 right = cross(dir, up);
   uv = 2. * uv - vec2(1.);
 
-  fov = fov * PI / 100.;
+  fov *= PI / 100.;
   float tn = tan(fov / 2.);
 
   ray.dir = normalize(dir + tn * right * uv.x + tn / aspect * up * uv.y);
@@ -101,7 +102,7 @@ Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspec
 
 vec4 selfReflect(Ray ray) {
 
-  float dist = 0.01;
+  float dist = 1e-2;
 
   vec3 pos;
   float minDist = MIN_DIST;
@@ -118,7 +119,7 @@ vec4 selfReflect(Ray ray) {
 
   float m = map(pos);
 
-  if (m < 0.01) {
+  if(m < 1e-2 ){
     vec3 n = normal(pos);
     vec3 r = reflect(ray.dir, n);
     vec4 refl = background(r);
@@ -127,14 +128,14 @@ vec4 selfReflect(Ray ray) {
     return refl * rf * 1.75;
   }
 
-  float glow = 0.1 / minDist;
+  float glow = 5e-2 / minDist;
 
   return background(ray.dir) + glow * COLOR_GLOW;
 }
 
 vec4 render(Ray ray) {
 
-  float dist = 0.01;
+  float dist = 0.05;
 
   vec3 pos;
   float minDist = MIN_DIST;
@@ -149,7 +150,7 @@ vec4 render(Ray ray) {
 
   float m = map(pos);
 
-  if (m < 0.01) {
+  if (m < 0.1) {
     vec3 n = normal(pos);
     vec3 r = reflect(ray.dir, n);
     vec4 refl = selfReflect(Ray(pos, r));

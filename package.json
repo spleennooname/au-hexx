@@ -1,38 +1,38 @@
 {
   "name": "au-hexx",
-  "version": "1.1.0",
-  "description": "au-hexx improved",
+  "version": "1.2.0",
+  "description": "au-hexx",
   "main": "index.js",
   "scripts": {
-    "build": "cross-env NODE_ENV=production webpack --mode=production --config webpack.config.js",
-    "dev": "cross-env NODE_ENV=development  webpack-dev-server --mode=development --open --config webpack.config.js",
+    "preview": "vite preview",
+    "build": "vite build",
+    "vite": "vite --host",
+    "lint": "npx eslint --color src/index.js",
+    "lint:watch": "npx esw -w --fix --color src/index.js",
+    "dev": "concurrently \"npm:lint:watch\" \"npm:vite\"",
     "deploy": "surge dist au-hexx.surge.sh"
   },
   "author": "spleen666@gmail.com",
   "license": "ISC",
   "devDependencies": {
-    "@babel/core": "^7.2.2",
-    "@babel/preset-env": "^7.4.2",
-    "babel-loader": "^8.0.5",
-    "babel-plugin-syntax-dynamic-import": "^6.18.0",
-    "copy-webpack-plugin": "^4.6.0",
-    "cross-env": "^5.2.0",
-    "css-loader": "^2.1.0",
-    "html-webpack-plugin": "^3.2.0",
-    "mini-css-extract-plugin": "^0.5.0",
-    "node-sass": "^4.11.0",
-    "optimize-css-assets-webpack-plugin": "^5.0.1",
-    "sass-loader": "^7.1.0",
-    "shader-loader": "^1.3.1",
-    "terser-webpack-plugin": "^1.2.3",
-    "webpack": "^4.28.4",
-    "webpack-cli": "^3.2.1",
-    "webpack-dev-server": "^3.1.14"
+    "concurrently": "^7.1.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^7.32.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.2.0",
+    "eslint-watch": "^8.0.0",
+    "javascript-obfuscator": "^4.0.0",
+    "sass": "^1.50.0",
+    "vite": "^2.9.5",
+    "vite-plugin-eslint": "^1.4.0",
+    "vite-plugin-glsl": "^0.1.2"
   },
   "dependencies": {
-    "detect-gpu": "0.0.40",
-    "gsap": "^2.0.2",
+    "detect-gpu": "4.0.17",
+    "gsap": "^3.10.3",
     "standalone-shader": "github:ayamflow/standalone-shader",
-    "twgl.js": "^4.9.1"
+    "twgl.js": "^4.22.0"
   }
 }

@@ -10,8 +10,5 @@ uniform vec2 uResolution;
 #define time uTime
 
 void main() {
-
-  vec2 uv = gl_FragCoord.xy / R.xy;
-
-  gl_FragColor = texture2D(uTexture, uv);
+  gl_FragColor = texture2D(uTexture, gl_FragCoord.xy / R.xy);
 }

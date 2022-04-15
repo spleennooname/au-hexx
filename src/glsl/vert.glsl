@@ -36,7 +36,7 @@ void main() {
 
   rotation = rotateX(xt * PI * .5) * rotateY(yt * PI * .5) * rotateZ(zt * PI);
 
-  cameraPos = vec3(-9., 5. * sin(time * .5), -1. * sin(time * .25) / time);
+  cameraPos = vec3(-3., 5. * sin(time * .5),   sin(time * .25) / time);
 
   gl_Position = vec4(position, 1.0);
 }

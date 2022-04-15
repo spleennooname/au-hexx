@@ -1,17 +1,31 @@
-<!DOCTYPE html>
+<!DOCTYPE>
 <html lang="en">
+
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <script src="https://cdn.polyfill.io/v2/polyfill.min.js"></script>
-    <link href="https://fonts.googleapis.com/css?family=Carrois+Gothic+SC" rel="stylesheet">
-    <title></title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AU-HEXX - golden crazy thing for DEVX 2018 - Andrea Bovo | spleen666@gmail.com</title>
+    <link href="https://fonts.googleapis.com/css?family=Carrois+Gothic+SC"
+          rel="stylesheet">
+    <link href="./src/styles/styles.scss"
+          rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
   </head>
+
   <body>
-    <div id="app"></div>
-    <script src="/dist/sqr.min.js"></script>
-    <script src="/dist/sqr-extras.min.js"></script>
-    <script src="/dist/build.js" charset="utf-8"></script>
+    <div class="demo">
+      <canvas id="canvas"></canvas>
+      <div class="title">AuHE<sup>X<sup>X</sup></sup><br /><span style="font-size:0.8em"></span><br /><span
+              class="v">v1.<sup>.2</sup></span></div>
+      <div class="log"></div>
+      <div class="cover">
+        <blockquote>&laquo;i've spent, I think, close to the last decade effortlessly and magically converting your tin
+          cans into pure gold.&raquo;</blockquote><br />
+        <span>Charlie Sheen</span>
+      </div>
+    </div>
+    <script type="module"
+            src="./src/index.js"></script>
   </body>
 </html>
