@@ -6,7 +6,7 @@
 
 ## demo
 
-[au-hexx](https://spleennooname.github.io/au-hexx/dist/index.html)
+[au-hexx](https://au-hexx.surge.sh/)
 
 ## setup
 
