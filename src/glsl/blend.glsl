@@ -13,6 +13,5 @@ uniform float uPersistence;
 
 void main() {
   vec2 uv = gl_FragCoord.xy / R.xy;
-  vec4 c = mix( texture2D(newTexture, uv), texture2D(oldTexture, uv), uPersistence);
-  gl_FragColor = c;
+  gl_FragColor = mix( texture2D(newTexture, uv), texture2D(oldTexture, uv), uPersistence);
 }

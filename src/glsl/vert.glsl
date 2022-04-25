@@ -2,10 +2,16 @@ precision highp float;
 
 uniform float uTime;
 
+/* uniform float loudness;
+uniform float perceptualSharpness;
+uniform float perceptualSpread;
+uniform float spectralFlatness;
+uniform float spectralKurtosis; */
+
 attribute vec3 position;
 
-varying vec3 cameraPos;
-varying mat3 rotation;
+varying vec3 vCameraPos;
+varying mat3 vRotation;
 
 #define time uTime
 #define PI 3.1415
@@ -32,11 +38,15 @@ void main() {
 
   float xt = floor(time * .5) + clamp(fract(time * .5) * 5., 0., 1.);
   float yt = floor(time * .5) + clamp(fract(time * .5) * 5., 0., 1.);
-  float zt = time * 0.1;
+  float zt = time * 0.4;
 
-  rotation = rotateX(xt * PI * .5) * rotateY(yt * PI * .5) * rotateZ(zt * PI);
+  vRotation = rotateX(xt * PI * .5) * rotateY(yt * PI * .5) * rotateZ(zt * PI);
 
-  cameraPos = vec3(-3., 5. * sin(time * .5),   sin(time * .25) / time);
+  vCameraPos = vec3(
+   -4.0 + 2.0 * sin(time), 
+    -4., 
+    -3. + 2.0 * cos(time)
+  );
 
   gl_Position = vec4(position, 1.0);
 }
