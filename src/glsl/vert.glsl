@@ -2,11 +2,11 @@ precision highp float;
 
 uniform float uTime;
 
-/* uniform float loudness;
+uniform float loudness;
 uniform float perceptualSharpness;
 uniform float perceptualSpread;
 uniform float spectralFlatness;
-uniform float spectralKurtosis; */
+uniform float spectralKurtosis; 
 
 attribute vec3 position;
 
@@ -36,16 +36,17 @@ mat3 rotateZ(float rad) {
 
 void main() {
 
-  float xt = floor(time * .5) + clamp(fract(time * .5) * 5., 0., 1.);
-  float yt = floor(time * .5) + clamp(fract(time * .5) * 5., 0., 1.);
+  float xt = floor(time * .5) + clamp(fract(time * .5) * 1., 0., 1.);
+  float yt = floor(time * .5) + clamp(fract(time * .5) * 1., 0., 1.);
+  
   float zt = time * 0.4;
 
-  vRotation = rotateX(xt * PI * .5) * rotateY(yt * PI * .5) * rotateZ(zt * PI);
+  vRotation = rotateX(xt * PI * .25) * rotateY(yt * PI * .25) * rotateZ(zt * PI);
 
   vCameraPos = vec3(
-   -4.0 + 2.0 * sin(time), 
+    -6., 
     -4., 
-    -3. + 2.0 * cos(time)
+    cos(time)
   );
 
   gl_Position = vec4(position, 1.0);

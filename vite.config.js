@@ -1,7 +1,7 @@
 // vite.config.js
 
-import { defineConfig} from "vite"
-import glsl from "vite-plugin-glsl";
+import { defineConfig } from 'vite'
+import glsl from 'vite-plugin-glsl'
 
 export default defineConfig(({ command, mode }) => {
   return {
@@ -13,13 +13,13 @@ export default defineConfig(({ command, mode }) => {
     ],
     build: {
       // cssCodeSplit: true,
-      minify: "esbuild",
-      chunkSizeWarningLimit:1000,
-      rollupOptions:{
+      minify: 'esbuild',
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
         input: {
-          index  : "./index.html",
+          index: './index.html'
         },
-        output:{
+        output: {
           /* manualChunks: {
             three: [ "three" ],
             meyda: [ "meyda" ],

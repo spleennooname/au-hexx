@@ -49,8 +49,8 @@ vec4 background(vec3 dir) {
 
 float sdHexPrism(vec3 p, vec2 h) {
   vec3 q = abs(p);
-  float x = mix(0.25, .5, 1.);
-  float y = mix(0.25, .5, 1.);
+  float x = mix(0.25, .5, 0.);
+  float y = mix(0.25, .5, 0.);
   return max(q.z - h.y, max((q.x * x + q.y * y), q.y) - h.x);
 }
 
@@ -184,7 +184,7 @@ vec4 render(Ray ray) {
     return refl * rf + background(ray.dir);
   }
 
-  float glow = 0.05 / minDist; 
+  float glow = mix(0., 0.5, perceptualSharpness) / minDist; 
 
   return background(ray.dir) + glow * COLOR_GLOW;
 }

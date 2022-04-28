@@ -29,7 +29,7 @@ varying mat3 vRotation;
 
 #define MIN_DIST 1.
 #define MAX_DIST 10.
-#define MAX_STEPS 64
+#define MAX_STEPS 96
 
 #define FOV 70.
 
@@ -43,23 +43,23 @@ vec4 tunnel2(sampler2D texture, vec2 R, float speed, float t) {
   
   vec2 p = -1.0 + 2.0 * (gl_FragCoord.xy / R.xy);
 
-  t *= 0.2;
-  p += vec2(cos(t), sin(t)) * .15;
+  t *= 0.5;
+  p += vec2(cos(t), sin(t)) * .25;
 
   float
      a = atan(p.y, p.x),
      r = length(p);
 
  vec2 newUv = vec2(
-    0.5/r + t,
-    a/PI
+    1.0/r + t,
+    a * 2./PI + t
   ); 
 
-  float fog = smoothstep(0., 0.45, 1. - r);
+  float fog = smoothstep(0., 0.95, 1. -r);
 
   vec4 tex= 1. - texture2D(texture, newUv);
 
-  return mix(tex, vec4(p.x * p.x), fog);
+  return mix(tex * r * 1e-1, vec4(0.0), fog);
 } 
 
 /* vec4 tunnel(sampler2D texture, vec2 R, float speed, float t) {
@@ -75,8 +75,8 @@ vec4 background(vec3 dir) {
 
 float sdHexPrism(vec3 p, vec2 h) {
   vec3 q = abs(p);
-  float x = 0.25 + .25 * sin(p.y * 0.1);
-  float y = 0.25 + .25 * sin(p.x * 0.9);
+  float x = mix(0.25, .5, 1.);
+  float y = mix(0.25, .5, 1.);
   return max(q.z - h.y, max((q.x * x + q.y * y), q.y) - h.x);
 }
 
@@ -85,21 +85,21 @@ float map(vec3 p) {
   float t = time * 1e-3;
 
   for (int i = 0; i < 3; i++) {
-    p = abs(p * vRotation + vec3(0.0, 0., -1.5));
-    p.x -= (sin(t * .25) + .5);
-    p.y -= (cos(t * .75) + .35);
-    p.z -= (sin(t * .25) + .15);
+    p = abs(p * vRotation + vec3(0.0, 0., (-1.5)));
+    p.x -= (sin(t * .95) + .5);
+    p.y -= (cos(t * .95) + .25);
+    p.z -= (sin(t * .95) + .25);
   }
   return sdHexPrism(
     p, 
     vec2(
-      0.5 + 0.25 * cos(t*.5),
-      0.5 + 0.25 * sin(t)
+       0.5 + mix(0., 0.5, loudness) * cos(t), 
+      mix(0., 0.5, perceptualSharpness)  + .5 * sin(t)
     ) 
   );
 }
 
-// Tetrahedral normal, to save a couple of "map" calls. Courtesy of IQ.
+// Tetrahedral normal, to save a couple of "glow" calls. Courtesy of IQ.
 vec3 calcNormal( in vec3 p ){
   // Note the slightly increased sampling distance, to alleviate
   // artifacts due to hit point inaccuracies.
@@ -131,11 +131,6 @@ Ray castRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspect)
   return ray;
 }
 
-
-float trace(Ray ray){
-  return 1.0;
-}
-
 vec4 selfReflect(Ray ray) {
 
   vec4 col = vec4(0.);  
@@ -146,7 +141,7 @@ vec4 selfReflect(Ray ray) {
 
   vec3 pos;
 
-  for (int i = 0; i < 32; i++) {
+  for (int i = 0; i < 16; i++) {
     pos = ray.org + dist * ray.dir;
     d = map(pos);
     if ( abs(d )<1e-3 && d > MAX_DIST ) break;
@@ -159,9 +154,9 @@ vec4 selfReflect(Ray ray) {
     vec3 r = reflect(ray.dir, n);
     vec4 refl = background(r);
     float rf = 0.8 - abs(dot(ray.dir, n)) * .4;
-    col = refl * rf;
+    col = 1.5 * refl * rf;
   } else {
-    float glow = 1e-2 / minDist;
+    float glow = mix(1e-2, 1.2e-2, loudness) / minDist;
     col = background(ray.dir) + glow * COLOR_GLOW;
   }
   return col;
@@ -180,27 +175,24 @@ vec4 renderScene(Ray ray) {
   for (int i = 0; i < MAX_STEPS; i++) {
     pos = ray.org + t * ray.dir;
     d = map(pos);
-    if ( abs(d )<1e-3 && d > MAX_DIST ) break;
+    if ( abs(d )<1e-2 && d > MAX_DIST ) break;
     t += d;
     minDist = min(minDist, d);
   }
 
-   if (d < MIN_DIST) {
+  if (d < MIN_DIST) {
     vec3 n = calcNormal(pos);
     vec3 r = reflect(ray.dir, n);
-    
     vec4 refl = selfReflect( Ray(pos, r) );
-    //vec4 refl = vec4(0., 0., 0., 1.);
-    float rf = 0.8 - abs(dot(ray.dir, n)) * .4;
-    rf *= rf;
-    
-    col = refl * rf;//
+    float rf = 1.0 - abs(dot(ray.dir, n)) * .4;
+    rf *= rf; 
+    //col = vec4(1.0, 0., 0., 1.);
+    col = refl * rf;
   }
   else {
-    float glow = 0.1 / minDist; 
+    float glow = mix(1e-2, 0.3, loudness) / minDist; 
     col = glow * COLOR_GLOW;
   }
- 
   return col;
 }
 

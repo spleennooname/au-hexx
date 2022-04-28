@@ -30,7 +30,7 @@ export const VIDEO_CONSTRAINS = {
   }
 }
 export class AudioFeaturesExtractor {
-  meyda ({ constrains = AUDIO_CONSTRAINS, fftSize = 512 }) {
+  meyda$ ({ constrains = AUDIO_CONSTRAINS, fftSize = 512 }) {
     return navigator
       .mediaDevices
       .getUserMedia(constrains)
