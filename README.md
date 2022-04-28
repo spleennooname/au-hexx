@@ -6,7 +6,7 @@
 
 ## demo
 
-[au-hexx](https://au-hexx.surge.sh/)
+[au-hexx](https://au-hexx.netlify.app/)
 
 ## setup
 
@@ -35,3 +35,6 @@ npm run build
 
 * 04/2022
   * rewrite with vitejs, add meyda
+
+* 04/2002
+  * change deploy on netilfy
