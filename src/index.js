@@ -88,11 +88,14 @@ function init (gpu) {
     wrap: gl.REPEAT
   })
 
-  bufferSize = Math.round(512 * dpr)
-  if (gpu.gpu.indexOf('RTX') && gpu.tier >= 3) {
-    bufferSize = Math.round(512 * 4 * dpr)
-  } else if ((gpu.isMobile && gpu.tier >= 3) || (!gpu.isMobile && gpu.tier > 2)) {
-    bufferSize = Math.round(512 * 2 * dpr)
+  if (gpu.isMobile) {
+    bufferSize = Math.round(512 * dpr)
+  } else {
+    if (gpu.gpu.indexOf('RTX') && gpu.tier >= 3) {
+      bufferSize = Math.round(512 * 4 * dpr)
+    } else if (gpu.tier >= 2) {
+      bufferSize = Math.round(512 * 1.5 * dpr)
+    }
   }
 
   log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
