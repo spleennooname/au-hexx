@@ -24,8 +24,8 @@ varying mat3 vRotation;
 #define LOOK_AT vec3(0., 0., 0.)
 #define UP vec3(0., 0., 10.)
 
-#define COLOR_GLOW vec4(0.0, 0.9686, 1.0, 1.0)
-#define COLOR_BACKGROUND vec4(0.1569, 0.0549, 0.7333, 1.0)
+#define COLOR_GLOW vec4(0.9686, 0.7333, 0.0196, 1.0)
+#define COLOR_BACKGROUND vec4(0.8627, 0.3804, 0.0588, 1.0)
 
 #define MIN_DIST 5.
 #define MAX_DIST 6.

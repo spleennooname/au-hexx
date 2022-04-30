@@ -29,7 +29,6 @@ let drawInfo
 
 // let stats
 let gpu
-let bufferSize
 
 /*   const spector = new SPECTOR.Spector()
   spector.displayUI() */
@@ -90,22 +89,9 @@ function init (gpuTier) {
     wrap: gl.REPEAT
   })
 
-  /*  if (gpu.isMobile) {
-    bufferSize = Math.round(512 * dpr)
-  } else {
-    if (gpu.gpu.indexOf('RTX') && gpu.tier >= 3) {
-      bufferSize = Math.round(512 * 4 * dpr)
-    } else if (gpu.tier >= 2) {
-      bufferSize = Math.round(512 * 1.5 * dpr)
-    }
-  } */
-
   fb0 = twgl.createFramebufferInfo(gl, null)
   fb1 = twgl.createFramebufferInfo(gl, null)
   tmp = twgl.createFramebufferInfo(gl, null)
-
-  canvas.width = bufferSize
-  canvas.height = bufferSize
 
   programInfo = twgl.createProgramInfo(gl, [vs, fs])
   // blendInfo = twgl.createProgramInfo(gl, [vs, blends])
@@ -115,8 +101,8 @@ function init (gpuTier) {
     position: {
       data: [
         -1, -1,
-        -1, 4,
-        4, -1
+        -1, 3,
+        3, -1
       ],
       numComponents: 2
     }
@@ -148,13 +134,12 @@ function render$ () {
 }
 
 function resizeCanvasToDisplaySize (gpu) {
+  const pxratio = gpu.tier === 3 ? dpr : 1
   const { clientHeight, clientWidth } = canvas
+  const w = Math.floor((clientWidth * pxratio) | 0)
+  const h = Math.floor((clientHeight * pxratio) | 0)
 
-  const w = Math.floor((clientWidth) | 0)
-  const h = Math.floor((clientHeight) | 0)
-
-  // const needsResize = h !== height || w !== width
-  const needsResize = twgl.resizeCanvasToDisplaySize(canvas)
+  const needsResize = twgl.resizeCanvasToDisplaySize(canvas, pxratio)
   if (needsResize) {
     twgl.resizeFramebufferInfo(gl, fb0, null, w, h)
     twgl.resizeFramebufferInfo(gl, tmp, null, w, h)
@@ -164,12 +149,9 @@ function resizeCanvasToDisplaySize (gpu) {
 
     if (gpu.tier <= 2) {
       gl.canvas.style.maxWidth = '800px'
-    } else
-    if (gpu.tier < 3) {
+    } else if (gpu.tier < 3) {
       gl.canvas.style.maxWidth = '1024px'
-    } /* else
-    if (gpu.tier >= 3) {
- */
+    }
 
     log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
       'tier: ' + gpu.tier + '<br/>' +
