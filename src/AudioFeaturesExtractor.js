@@ -17,18 +17,6 @@ export const AUDIO_CONSTRAINS = {
   }
 }
 
-export const VIDEO_CONSTRAINS = {
-  video: {
-    /* mandatory:{
-      minWidth: 1280,
-      minHeight: 720,
-      maxWidth: 1920,
-      maxHeight: 1080,
-    } */
-    width: 640,
-    height: 480
-  }
-}
 export class AudioFeaturesExtractor {
   meyda$ ({ constrains = AUDIO_CONSTRAINS, fftSize = 512 }) {
     return navigator

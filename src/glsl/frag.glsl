@@ -24,26 +24,21 @@ varying mat3 vRotation;
 #define LOOK_AT vec3(0., 0., 0.)
 #define UP vec3(0., 0., 10.)
 
-#define COLOR_GLOW vec4(1.0, 0.4, 0.0, 1.0)
-#define COLOR_BACKGROUND vec4(0.1804, 0.0078, 0.0078, 1.0)
+#define COLOR_GLOW vec4(0.0, 0.9686, 1.0, 1.0)
+#define COLOR_BACKGROUND vec4(0.1569, 0.0549, 0.7333, 1.0)
 
-#define MIN_DIST 1.
-#define MAX_DIST 10.
-#define MAX_STEPS 96
+#define MIN_DIST 5.
+#define MAX_DIST 6.
+#define MAX_STEPS 32
 
 #define FOV 70.
 
-struct Ray {
-  vec3 org;
-  vec3 dir;
-};
-
-
-vec4 tunnel2(sampler2D texture, vec2 R, float speed, float t) {
+vec4 tunnel(sampler2D texture, vec2 R, float t) {
   
   vec2 p = -1.0 + 2.0 * (gl_FragCoord.xy / R.xy);
 
-  t *= 0.5;
+  t *= 0.2;
+
   p += vec2(cos(t), sin(t)) * .25;
 
   float
@@ -55,28 +50,13 @@ vec4 tunnel2(sampler2D texture, vec2 R, float speed, float t) {
     a * 2./PI + t
   ); 
 
-  float fog = smoothstep(0., 0.95, 1. -r);
-
-  vec4 tex= 1. - texture2D(texture, newUv);
-
-  return mix(tex * r * 1e-1, vec4(0.0), fog);
+  return (1. - texture2D(texture, newUv)) * 0.025 * r * r;
 } 
-
-/* vec4 tunnel(sampler2D texture, vec2 R, float speed, float t) {
-  vec2 p = -1.0 + 2.0 * (gl_FragCoord.xy / R.xy);
-  vec2 newUv = vec2(p.x / p.y, 1.5 * t + speed / abs(p.x) );
-  vec4 c = mix(texture2D(texture, newUv), vec4(p.y * p.y), 0.9);
-  return c;
-} */
  
-vec4 background(vec3 dir) {
-  return vec4(dir, 1.) * COLOR_BACKGROUND;
-}
-
 float sdHexPrism(vec3 p, vec2 h) {
   vec3 q = abs(p);
-  float x = mix(0.25, .5, 1.);
-  float y = mix(0.25, .5, 1.);
+  float x = 0.5;
+  float y = 0.5;
   return max(q.z - h.y, max((q.x * x + q.y * y), q.y) - h.x);
 }
 
@@ -84,17 +64,26 @@ float map(vec3 p) {
 
   float t = time * 1e-3;
 
-  for (int i = 0; i < 3; i++) {
-    p = abs(p * vRotation + vec3(0.0, 0., (-1.5)));
-    p.x -= (sin(t * .95) + .5);
-    p.y -= (cos(t * .95) + .25);
-    p.z -= (sin(t * .95) + .25);
-  }
+  vec3 rt = vec3(
+      sin(t * .95) + .5,
+      cos(t * .95) + .25,
+      sin(t * .95) + .25
+  );
+
+  p = abs(p * vRotation + vec3(0.0, 0., -1.5));
+  p -= rt; 
+
+  p = abs(p * vRotation + vec3(0.0, 0., -3.5));
+  p -= rt; 
+
+  p = abs(p * vRotation + vec3(0.0, 0., -0.5));
+  p -= rt; 
+  
   return sdHexPrism(
     p, 
     vec2(
-       0.5 + mix(0., 0.5, loudness) * cos(t), 
-      mix(0., 0.5, perceptualSharpness)  + .5 * sin(t)
+      0.5 + 0.5 * cos(t), 
+      0.5 + 0.5 * sin(t)
     ) 
   );
 }
@@ -111,6 +100,12 @@ vec3 calcNormal( in vec3 p ){
       e.xxx * map(p + e.xxx));
 }
 
+
+struct Ray {
+  vec3 org;
+  vec3 dir;
+};
+
 Ray castRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspect) {
 
   Ray ray;
@@ -118,10 +113,12 @@ Ray castRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspect)
   ray.org = center;
 
   vec3 dir = normalize(lookAt - center);
+
   up = normalize(up - dir * dot(dir, up));
 
   vec3 right = cross(dir, up);
-  uv = 2. * uv - vec2(1.);
+
+  uv = 2. * uv - 1.;
 
   fov *= PI / 100.;
   float tn = tan(fov / 2.);
@@ -131,7 +128,7 @@ Ray castRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspect)
   return ray;
 }
 
-vec4 selfReflect(Ray ray) {
+vec4 selfReflect(vec3 ro, vec3 rd) {
 
   vec4 col = vec4(0.);  
 
@@ -139,33 +136,33 @@ vec4 selfReflect(Ray ray) {
      minDist = MIN_DIST,
      dist = 1e-2;
 
-  vec3 pos;
+  vec3 p;
 
   for (int i = 0; i < 16; i++) {
-    pos = ray.org + dist * ray.dir;
-    d = map(pos);
-    if ( abs(d )<1e-3 && d > MAX_DIST ) break;
+    p = ro + dist * rd;
+    d = map(p);
+    if ( abs(d )<1e-1 && d > MAX_DIST ) break;
     dist += d;
     minDist = min(minDist, d);
   }
-
+  
   if(d < MIN_DIST ){
-    vec3 n = calcNormal(pos);
-    vec3 r = reflect(ray.dir, n);
-    vec4 refl = background(r);
-    float rf = 0.8 - abs(dot(ray.dir, n)) * .4;
-    col = 1.5 * refl * rf;
+    vec3 
+      n = calcNormal(p),
+      r = reflect(rd, n);
+    vec4 refl = vec4(r, 1.) * COLOR_BACKGROUND;
+    float rf = 1. - abs(dot(rd, n)) * 1.;
+    col = rf * refl * rf;
   } else {
-    float glow = mix(1e-2, 1.2e-2, loudness) / minDist;
-    col = background(ray.dir) + glow * COLOR_GLOW;
+    col = vec4(rd, 1.) * COLOR_BACKGROUND + (1e-2 / minDist) * COLOR_GLOW;
   }
-  return col;
+  return clamp(col, 0., 1.);
 }
 
-vec4 renderScene(Ray ray) {
+vec4 renderScene(vec3 ro, vec3 rd) {
 
-  vec4 col = vec4(0., 0., 0., 1.);  
-  vec3 pos;
+  vec4 col = vec4(0);  
+  vec3 p;
 
   float 
     t = 0.0,
@@ -173,38 +170,36 @@ vec4 renderScene(Ray ray) {
     minDist = MIN_DIST;
 
   for (int i = 0; i < MAX_STEPS; i++) {
-    pos = ray.org + t * ray.dir;
-    d = map(pos);
-    if ( abs(d )<1e-2 && d > MAX_DIST ) break;
+    p = ro + t * rd;
+    d = map(p);
+    if ( abs(d )<1e-1 && d > MAX_DIST ) break;
     t += d;
     minDist = min(minDist, d);
   }
 
   if (d < MIN_DIST) {
-    vec3 n = calcNormal(pos);
-    vec3 r = reflect(ray.dir, n);
-    vec4 refl = selfReflect( Ray(pos, r) );
-    float rf = 1.0 - abs(dot(ray.dir, n)) * .4;
-    rf *= rf; 
-    //col = vec4(1.0, 0., 0., 1.);
-    col = refl * rf;
+    vec3 n = calcNormal(p);
+    vec3 r = reflect(rd, n);
+    vec4 refl = selfReflect(p, r);
+    float rf = 1.0 - abs(dot(rd, n));
+    col = refl * rf *rf;
   }
-  else {
-    float glow = mix(1e-2, 0.3, loudness) / minDist; 
-    col = glow * COLOR_GLOW;
+  else 
+  {
+    col = (0.05 / minDist) * COLOR_GLOW;
   }
-  return col;
+  return clamp(col, 0., 1.);
 }
 
 void main() {
 
   vec2 uv = gl_FragCoord.xy / R.xy;
   
-  vec4 c1 = tunnel2(uPatternTexture, R, 0.65, time);
-
   Ray ray = castRay(vCameraPos, LOOK_AT, UP, uv, FOV, R.x / R.y );
 
-  vec4 c2 = renderScene(ray);
+  vec4 ct = tunnel(uPatternTexture, R, time);
+ 
+  vec4 cr = renderScene(ray.org, ray.dir);
 
-  gl_FragColor = sqrt(clamp( c1  + c2, 0., 1.));
+  gl_FragColor = sqrt(ct + cr);
 }

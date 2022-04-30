@@ -2,49 +2,50 @@
 
 import './styles/styles.scss'
 
-import Stats from 'stats.js'
+// import Stats from 'stats.js'
 
 import vs from './glsl/vert.glsl'
 import fs from './glsl/frag.glsl'
 
-import blends from './glsl/blend.glsl'
+// import blends from './glsl/blend.glsl'
 import draws from './glsl/draw.glsl'
 
-import { dpr, invlerp } from './utils'
-import { AudioFeaturesExtractor } from './AudioFeaturesExtractor'
+import { dpr /* invlerp */ } from './utils'
+// import { AudioFeaturesExtractor } from './AudioFeaturesExtractor'
 import { getGPUTier } from 'detect-gpu'
 
-import { animationFrames, switchMap, fromEvent, debounceTime, first, delay, combineLatest, concat, from, tap, buffer } from 'rxjs'
+import { animationFrames, combineLatest, concat, from, tap } from 'rxjs'
 
 import { gsap } from 'gsap'
 import * as twgl from 'twgl.js'
 
-let gl, fb0, fb1, fb2, tmp
+let gl, fb0, fb1, tmp
 let positionBuffer
 
 let texture
 let programInfo
 let drawInfo
-let blendInfo
+// let blendInfo
 
-let stats
+// let stats
+let gpu
 let bufferSize
 
 /*   const spector = new SPECTOR.Spector()
   spector.displayUI() */
 
-const audioFeaturesExtractor = new AudioFeaturesExtractor()
+// const audioFeaturesExtractor = new AudioFeaturesExtractor()
 
 const log = document.querySelector('#log')
 
 const canvas = document.querySelector('#canvas')
-const cover = document.querySelector('.cover')
+/* const cover = document.querySelector('.cover')
 
 const cover$ = fromEvent(cover, 'click')
   .pipe(
     debounceTime(300),
     first()
-  )
+  ) */
 
 function demo () {
   try {
@@ -53,12 +54,12 @@ function demo () {
     concat(
       //
       combineLatest([
-        from(audioFeaturesExtractor.meyda$({ fftSize: 512 })),
+        // from(audioFeaturesExtractor.meyda$({ fftSize: 512 })),
         from(getGPUTier())
       ])
         .pipe(
           tap(console.log),
-          tap(([meyda, gpu]) => init(gpu))
+          tap(([gpu]) => init(gpu))
         ),
       //
       render$()
@@ -69,16 +70,17 @@ function demo () {
   }
 }
 
-function init (gpu) {
+function init (gpuTier) {
   // gl.getExtension('WEBGL_lose_context').restoreContext();
   // gl.getExtension('WEBGL_lose_context').loseContext();
 
+  gpu = gpuTier
   console.table(gpu)
 
-  stats = new Stats()
+  /* stats = new Stats()
   stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
   document.body.appendChild(stats.domElement)
-
+ */
   gl = twgl.getContext(canvas, { depth: false, antialiasing: true })
 
   texture = twgl.createTexture(gl, {
@@ -88,7 +90,7 @@ function init (gpu) {
     wrap: gl.REPEAT
   })
 
-  if (gpu.isMobile) {
+  /*  if (gpu.isMobile) {
     bufferSize = Math.round(512 * dpr)
   } else {
     if (gpu.gpu.indexOf('RTX') && gpu.tier >= 3) {
@@ -96,16 +98,11 @@ function init (gpu) {
     } else if (gpu.tier >= 2) {
       bufferSize = Math.round(512 * 1.5 * dpr)
     }
-  }
+  } */
 
-  log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
-  'tier: ' + gpu.tier + '<br/>' +
-  'dpratio: ' + dpr + '<br/>' +
-  'fps: ' + gpu.fps + '<br/>' +
-  'bufferSize: ' + bufferSize
-
-  fb0 = twgl.createFramebufferInfo(gl, null, bufferSize, bufferSize)
-  fb1 = twgl.createFramebufferInfo(gl, null, bufferSize, bufferSize)
+  fb0 = twgl.createFramebufferInfo(gl, null)
+  fb1 = twgl.createFramebufferInfo(gl, null)
+  tmp = twgl.createFramebufferInfo(gl, null)
 
   canvas.width = bufferSize
   canvas.height = bufferSize
@@ -150,30 +147,42 @@ function render$ () {
     )
 }
 
-function resizeCanvasToDisplaySize () {
-  const { clientHeight, clientWidth, width, height } = canvas
-  // const ar = clientWidth / clientHeight
+function resizeCanvasToDisplaySize (gpu) {
+  const { clientHeight, clientWidth } = canvas
 
-  // const w = Math.floor((clientWidth) * dpr | 0)
-  // const h = Math.floor((clientHeight) * dpr | 0)
+  const w = Math.floor((clientWidth) | 0)
+  const h = Math.floor((clientHeight) | 0)
 
   // const needsResize = h !== height || w !== width
-  // const needsResize = twgl.resizeCanvasToDisplaySize(canvas, dpr)
-  // if (needsResize) {
-  /* twgl.resizeFramebufferInfo(gl, fb0, null, bufferSize, bufferSize)
-  twgl.resizeFramebufferInfo(gl, fb1, null, bufferSize, bufferSize) */
-  // twgl.resizeFramebufferInfo(gl, fb2, null, w, h)
-  /*    canvas.width = w
-    canvas.height = h */
-  // gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight)
+  const needsResize = twgl.resizeCanvasToDisplaySize(canvas)
+  if (needsResize) {
+    twgl.resizeFramebufferInfo(gl, fb0, null, w, h)
+    twgl.resizeFramebufferInfo(gl, tmp, null, w, h)
+    twgl.resizeFramebufferInfo(gl, fb1, null, w, h)
+
+    console.log('resize!!', w, h)
+
+    if (gpu.tier <= 2) {
+      gl.canvas.style.maxWidth = '800px'
+    } else
+    if (gpu.tier < 3) {
+      gl.canvas.style.maxWidth = '1024px'
+    } /* else
+    if (gpu.tier >= 3) {
+ */
+
+    log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
+      'tier: ' + gpu.tier + '<br/>' +
+      'dpratio: ' + dpr + '<br/>' +
+      'fps: ' + gpu.fps + '<br/>' +
+      'w / h' + w + ' ' + h
+  }
   // console.log('resize!!', gl.drawingBufferWidth)
-  // }
-  // console.log('resize!!', gl.drawingBufferWidth)
-  return [bufferSize, bufferSize]
+  return [w, h]
 }
 
 function draw (time) {
-  if (!audioFeaturesExtractor) return
+  /* if (!audioFeaturesExtractor) return
 
   const features = audioFeaturesExtractor.features([
     'perceptualSharpness',
@@ -189,19 +198,19 @@ function draw (time) {
 
   const loudness = invlerp(5, 30, features.loudness.total)
 
-  spectralKurtosis = invlerp(-30, 30, spectralKurtosis)
+  spectralKurtosis = invlerp(-30, 30, spectralKurtosis) */
 
   // console.log(loudness /* perceptualSpread, spectralKurtosis */)
-  const uResolution = [bufferSize, bufferSize]// resizeCanvasToDisplaySize()
+  const uResolution = resizeCanvasToDisplaySize(gpu)
 
   // www.youtube.com/watch?v=rfQ8rKGTVlg#t=31m42s THXX GREGGMANN!!!
   gl.useProgram(programInfo.program)
   twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer)
   twgl.setUniforms(programInfo, {
-    loudness,
+    /*     loudness,
     perceptualSpread,
     perceptualSharpness,
-    spectralKurtosis,
+    spectralKurtosis, */
     uTime: time,
     uPatternTexture: texture,
     uResolution
@@ -234,14 +243,11 @@ function draw (time) {
   twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES)
 
   // swap
-  /* tmp = fb1
-  fb1 = fb2
-  fb2 = tmp */
   tmp = fb0
   fb0 = fb1
   fb1 = tmp
 
-  stats.update()
+  // stats.update()
 }
 
 demo()
