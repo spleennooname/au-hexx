@@ -26,18 +26,17 @@ body {
 
   font-family: 'Carrois Gothic SC', sans-serif;
 
-  -webkit-font-smoothing: antialiased;
+  /* -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizelegibility;
-
+ */
   padding: 0;
   margin: 0;
-  background: radial-gradient(rgb(222, 209, 209), rgb(9, 7, 106))!important;
+  background: radial-gradient(rgb(117, 79, 3),  rgb(21, 17, 219))!important;
 }
 
 #canvas {
   width: 100%;
-  /*max-width: 1024px;*/
   height: 100%; 
 }
 
@@ -70,7 +69,7 @@ body>div:not(.demo) {
 }
 
 #log {
-  color: black;
+  color: white;
   position: fixed;
   text-align: right;
   padding: 15px 15px 0 0;

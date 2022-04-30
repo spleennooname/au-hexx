@@ -76,7 +76,7 @@ varying mat3 vRotation;
 #define LOOK_AT vec3(0., 0., 0.)
 #define UP vec3(0., 0., 10.)
 
-#define COLOR_GLOW vec4(0.9686, 0.7333, 0.0196, 1.0)
+#define COLOR_GLOW vec4(0.9686, 0.6196, 0.0196, 1.0)
 #define COLOR_BACKGROUND vec4(0.8627, 0.3804, 0.0588, 1.0)
 
 #define MIN_DIST 5.
@@ -238,7 +238,7 @@ vec4 renderScene(vec3 ro, vec3 rd) {
   {
     col = (0.05 / minDist) * COLOR_GLOW;
   }
-  return clamp(col, 0., 1.);
+  return max(col, 0.);
 }
 
 void main() {
@@ -251,7 +251,7 @@ void main() {
  
   vec4 cr = renderScene(ray.org, ray.dir);
 
-  gl_FragColor = sqrt(ct + cr);
+  gl_FragColor = sqrt(max(ct + cr, 0.));
 }`,ka=`precision highp float;
 
 uniform sampler2D uTexture;
