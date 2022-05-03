@@ -1,7 +1,9 @@
 // vite.config.js
 
 import { defineConfig } from 'vite'
+
 import glsl from 'vite-plugin-glsl'
+import obfuscator from 'rollup-plugin-obfuscator';
 
 export default defineConfig(({ command, mode }) => {
   return {
@@ -20,11 +22,15 @@ export default defineConfig(({ command, mode }) => {
           index: './index.html'
         },
         output: {
-          /* manualChunks: {
-            three: [ "three" ],
-            meyda: [ "meyda" ],
-            rxjs: [ "rxjs" ]
-          } */
+          plugins: [
+            obfuscator({
+              globalOptions: {
+                // Your javascript-obfuscator options here
+                // Will be applied on the whole bundle. Set to `false` to disable
+                // See what's allowed: https://github.com/javascript-obfuscator/javascript-obfuscator
+              }
+            })
+          ]
         }
       }
     }

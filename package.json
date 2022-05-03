@@ -1,6 +1,6 @@
 {
   "name": "au-hexx",
-  "version": "1.2.0",
+  "version": "1.1.0",
   "description": "au-hexx",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "lint": "npx eslint --color src/index.js",
     "lint:watch": "npx esw -w --fix --color src/index.js",
     "dev": "concurrently \"npm:lint:watch\" \"npm:vite\"",
-    "deploy": "surge dist au-hexx.surge.sh"
+    "lame": "npx javascript-obfuscator src/index.js --output src/index.js"
   },
   "author": "spleen666@gmail.com",
   "license": "ISC",
@@ -24,6 +24,7 @@
     "eslint-plugin-promise": "^5.2.0",
     "eslint-watch": "^8.0.0",
     "javascript-obfuscator": "^4.0.0",
+    "rollup-plugin-obfuscator": "^0.2.1",
     "sass": "^1.50.0",
     "spectorjs": "^0.9.27",
     "vite": "^2.9.5",
@@ -35,7 +36,6 @@
     "gsap": "^3.10.3",
     "meyda": "^5.3.0",
     "rxjs": "^7.5.5",
-    "standalone-shader": "github:ayamflow/standalone-shader",
     "stats.js": "^0.17.0",
     "twgl.js": "^4.22.0"
   }
