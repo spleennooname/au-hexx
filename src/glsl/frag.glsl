@@ -92,12 +92,13 @@ float map(vec3 p) {
 vec3 calcNormal( in vec3 p ){
   // Note the slightly increased sampling distance, to alleviate
   // artifacts due to hit point inaccuracies.
-  vec2 e = vec2(.0015, -.0015); 
+  vec2 e = vec2(.0025, -.0025); 
   return normalize(
       e.xyy * map(p + e.xyy) + 
       e.yyx * map(p + e.yyx) + 
-      e.yxy * map(p + e.yxy) + 
-      e.xxx * map(p + e.xxx));
+      e.yxy * map(p + e.yxy) +
+      e.xxx * map(p + e.xxx)
+  );
 }
 
 

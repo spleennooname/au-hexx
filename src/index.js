@@ -10,8 +10,10 @@ import fs from './glsl/frag.glsl'
 // import blends from './glsl/blend.glsl'
 import draws from './glsl/draw.glsl'
 
-import { dpr /* invlerp */ } from './utils'
-// import { AudioFeaturesExtractor } from './AudioFeaturesExtractor'
+import { dpr, invlerp } from './utils'
+
+import { AudioFeaturesExtractor } from './AudioFeaturesExtractor'
+
 import { getGPUTier } from 'detect-gpu'
 
 import { animationFrames, combineLatest, concat, from, tap } from 'rxjs'
@@ -25,6 +27,8 @@ let positionBuffer
 let texture
 let programInfo
 let drawInfo
+let stream
+let audioUnif = {}
 // let blendInfo
 
 // let stats
@@ -33,32 +37,37 @@ let gpu
 /*   const spector = new SPECTOR.Spector()
   spector.displayUI() */
 
-// const audioFeaturesExtractor = new AudioFeaturesExtractor()
+const audioFeaturesExtractor = new AudioFeaturesExtractor()
 
 const log = document.querySelector('#log')
-
 const canvas = document.querySelector('#canvas')
-/* const cover = document.querySelector('.cover')
+const cover = document.querySelector('.cover')
 
-const cover$ = fromEvent(cover, 'click')
+/* const start$ = fromEvent(canvas, 'click')
   .pipe(
     debounceTime(300),
     first()
   ) */
 
 function demo () {
+  gsap.to(cover, 5, {
+    delay: 1,
+    autoAlpha: 0
+  })
+
   try {
     gl = canvas.getContext('webgl')
     //
     concat(
       //
       combineLatest([
-        // from(audioFeaturesExtractor.meyda$({ fftSize: 512 })),
+        // start$,
+        from(audioFeaturesExtractor.meyda$({ fftSize: 512 })),
         from(getGPUTier())
       ])
         .pipe(
           tap(console.log),
-          tap(([gpu]) => init(gpu))
+          tap(([stream, gpu]) => init(stream, gpu))
         ),
       //
       render$()
@@ -69,11 +78,13 @@ function demo () {
   }
 }
 
-function init (gpuTier) {
+function init (mediaStream, gpuTier) {
   // gl.getExtension('WEBGL_lose_context').restoreContext();
   // gl.getExtension('WEBGL_lose_context').loseContext();
 
   gpu = gpuTier
+  stream = mediaStream
+
   console.table(gpu)
 
   /* stats = new Stats()
@@ -107,11 +118,6 @@ function init (gpuTier) {
       numComponents: 2
     }
   })
-
-  gsap.to('.cover', 5, {
-    delay: 1,
-    autoAlpha: 0
-  })
 }
 
 /* function run () {
@@ -134,12 +140,14 @@ function render$ () {
 }
 
 function resizeCanvasToDisplaySize (gpu) {
-  const pxratio = gpu.tier === 3 ? dpr : 1
-  const { clientHeight, clientWidth } = canvas
-  const w = Math.floor((clientWidth * pxratio) | 0)
-  const h = Math.floor((clientHeight * pxratio) | 0)
+  const pxr = !gpu.isMobile && gpu.tier >= 3 ? dpr : 1
 
-  const needsResize = twgl.resizeCanvasToDisplaySize(canvas, pxratio)
+  const { clientHeight, clientWidth } = canvas
+
+  const w = Math.floor((clientWidth * pxr) | 0)
+  const h = Math.floor((clientHeight * pxr) | 0)
+
+  const needsResize = twgl.resizeCanvasToDisplaySize(canvas, pxr)
   if (needsResize) {
     twgl.resizeFramebufferInfo(gl, fb0, null, w, h)
     twgl.resizeFramebufferInfo(gl, tmp, null, w, h)
@@ -147,40 +155,48 @@ function resizeCanvasToDisplaySize (gpu) {
 
     console.log('resize!!', w, h)
 
-    if (gpu.tier <= 2) {
-      gl.canvas.style.maxWidth = '800px'
-    } else if (gpu.tier < 3) {
-      gl.canvas.style.maxWidth = '1024px'
+    let maxw = 512
+    if (gpu.tier <= 1) {
+      maxw = 512
+    } else if (gpu.tier <= 2) {
+      maxw = 800
+    } else if (gpu.tier > 2) {
+      maxw = 1024
     }
+
+    canvas.style.maxWidth = `${maxw}px`
 
     log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
       'tier: ' + gpu.tier + '<br/>' +
       'dpratio: ' + dpr + '<br/>' +
       'fps: ' + gpu.fps + '<br/>' +
-      'w / h' + w + ' ' + h
+      'W x H: ' + w + ' ' + h
   }
   // console.log('resize!!', gl.drawingBufferWidth)
   return [w, h]
 }
 
 function draw (time) {
-  /* if (!audioFeaturesExtractor) return
+  if (stream.active) {
+    if (!audioFeaturesExtractor) return
 
-  const features = audioFeaturesExtractor.features([
-    'perceptualSharpness',
-    'perceptualSpread',
-    'spectralFlatness',
-    'spectralKurtosis',
-    'loudness'
-  ])
+    const features = audioFeaturesExtractor.features([
+      'perceptualSharpness',
+      'perceptualSpread',
+      'spectralFlatness',
+      'spectralKurtosis',
+      'loudness'
+    ])
 
-  if (!features) return
+    if (!features) return
 
-  let { perceptualSpread, perceptualSharpness, spectralFlatness, spectralKurtosis } = features
+    const { perceptualSpread, perceptualSharpness, spectralFlatness, spectralKurtosis } = features
 
-  const loudness = invlerp(5, 30, features.loudness.total)
-
-  spectralKurtosis = invlerp(-30, 30, spectralKurtosis) */
+    const loudness = invlerp(5, 30, features.loudness.total)
+    audioUnif = {
+      loudness, perceptualSharpness, perceptualSpread, spectralFlatness, spectralKurtosis
+    }
+  }
 
   // console.log(loudness /* perceptualSpread, spectralKurtosis */)
   const uResolution = resizeCanvasToDisplaySize(gpu)
@@ -189,10 +205,7 @@ function draw (time) {
   gl.useProgram(programInfo.program)
   twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer)
   twgl.setUniforms(programInfo, {
-    /*     loudness,
-    perceptualSpread,
-    perceptualSharpness,
-    spectralKurtosis, */
+    ...audioUnif,
     uTime: time,
     uPatternTexture: texture,
     uResolution
@@ -228,8 +241,6 @@ function draw (time) {
   tmp = fb0
   fb0 = fb1
   fb1 = tmp
-
-  // stats.update()
 }
 
 demo()
