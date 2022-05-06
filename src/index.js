@@ -136,7 +136,7 @@ function render$ () {
 }
 
 function resizeCanvasToDisplaySize (gpu) {
-  const pxr = !gpu.isMobile && gpu.tier >= 3 ? dpr : 1
+  const pxr = gpu.tier >= 3 ? dpr : 1
 
   const { clientHeight, clientWidth } = canvas
 
@@ -162,7 +162,7 @@ function resizeCanvasToDisplaySize (gpu) {
 
     log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
       'tier: ' + gpu.tier + '<br/>' +
-      'dpratio: ' + dpr + '<br/>' +
+      'px.ratio: ' + pxr + '<br/>' +
       'fps: ' + gpu.fps + '<br/>' +
       'W x H: ' + w + ' ' + h
   }
