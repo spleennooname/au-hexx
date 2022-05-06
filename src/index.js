@@ -62,12 +62,12 @@ function demo () {
       //
       combineLatest([
         // start$,
-        from(audioFeaturesExtractor.meyda$({ fftSize: 512 })),
+        // from(audioFeaturesExtractor.meyda$({ fftSize: 512 })),
         from(getGPUTier())
       ])
         .pipe(
           tap(console.log),
-          tap(([stream, gpu]) => init(stream, gpu))
+          tap(([gpu]) => init(gpu))
         ),
       //
       render$()
@@ -78,19 +78,15 @@ function demo () {
   }
 }
 
-function init (mediaStream, gpuTier) {
+function init (gpuTier) {
   // gl.getExtension('WEBGL_lose_context').restoreContext();
   // gl.getExtension('WEBGL_lose_context').loseContext();
 
   gpu = gpuTier
-  stream = mediaStream
+  // stream = mediaStream
 
   console.table(gpu)
 
-  /* stats = new Stats()
-  stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
-  document.body.appendChild(stats.domElement)
- */
   gl = twgl.getContext(canvas, { depth: false, antialiasing: true })
 
   texture = twgl.createTexture(gl, {
@@ -158,13 +154,11 @@ function resizeCanvasToDisplaySize (gpu) {
     let maxw = 512
     if (gpu.tier <= 1) {
       maxw = 512
+      canvas.style.maxWidth = `${maxw}px`
     } else if (gpu.tier <= 2) {
       maxw = 800
-    } else if (gpu.tier > 2) {
-      maxw = 1024
+      canvas.style.maxWidth = `${maxw}px`
     }
-
-    canvas.style.maxWidth = `${maxw}px`
 
     log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
       'tier: ' + gpu.tier + '<br/>' +
@@ -177,7 +171,7 @@ function resizeCanvasToDisplaySize (gpu) {
 }
 
 function draw (time) {
-  if (stream.active) {
+  if (stream && stream.active) {
     if (!audioFeaturesExtractor) return
 
     const features = audioFeaturesExtractor.features([

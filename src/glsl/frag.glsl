@@ -170,24 +170,36 @@ vec4 renderScene(vec3 ro, vec3 rd) {
     d = 0.0,
     minDist = MIN_DIST;
 
+  vec3 lp = ro + vec3(0, 1, -.5);
+    
+  float ac = 0.;
+  
   for (int i = 0; i < MAX_STEPS; i++) {
     p = ro + t * rd;
     d = map(p);
+    ac += exp(-d);
     if ( abs(d )<1e-1 && d > MAX_DIST ) break;
     t += d;
     minDist = min(minDist, d);
   }
 
+
+  // Attenuating the light, based on distance.
+  //float atten = 1. / (1. + lDist*.2 + lDist*lDist*.1);
+
   if (d < MIN_DIST) {
-    vec3 n = calcNormal(p);
-    vec3 r = reflect(rd, n);
+    
+    vec3 
+      n = calcNormal(p),
+      r = reflect(rd, n);
+
     vec4 refl = selfReflect(p, r);
     float rf = 1.0 - abs(dot(rd, n));
-    col = refl * rf *rf;
+    col = ac * refl * rf *rf;
   }
   else 
   {
-    col = (0.05 / minDist) * COLOR_GLOW;
+    col = (0.05 / minDist)  * COLOR_GLOW;
   }
   return max(col, 0.);
 }
