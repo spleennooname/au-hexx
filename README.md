@@ -25,7 +25,7 @@ npm run build
 
 * 02/2018, first release for DEVX 2018!!
 
-* 04/2019, massive rebuild-from-scratch with new techniques acquired in the while. New features:
+* 04/2019, massive rebuild-from-scratch:
   * A lot GSL optimizations (many computations shifted in the vertex shader)
   * remove VueJS
   * builtWith [TwglJS](http://twgljs.org)
@@ -36,5 +36,5 @@ npm run build
 * 04/2022
   * rewrite with vitejs, add meyda
 
-* 04/2002
+* 04/2022
   * change deploy on netilfy
