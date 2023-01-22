@@ -22,7 +22,7 @@ varying mat3 vRotation;
 #define PI 3.141
 
 #define LOOK_AT vec3(0., 0., 0.)
-#define UP vec3(0., 0., 10.)
+#define UP vec3(0., 0., 2.)
 
 #define COLOR_GLOW vec4(0.9686, 0.6196, 0.0196, 1.0)
 #define COLOR_BACKGROUND vec4(0.8627, 0.3804, 0.0588, 1.0)
@@ -31,7 +31,7 @@ varying mat3 vRotation;
 #define MAX_DIST 6.
 #define MAX_STEPS 32
 
-#define FOV 70.
+#define FOV 54.
 
 vec4 tunnel(sampler2D texture, vec2 R, float t) {
   
@@ -100,7 +100,6 @@ vec3 calcNormal( in vec3 p ){
       e.xxx * map(p + e.xxx)
   );
 }
-
 
 struct Ray {
   vec3 org;
@@ -214,5 +213,5 @@ void main() {
  
   vec4 cr = renderScene(ray.org, ray.dir);
 
-  gl_FragColor = sqrt(max(ct + cr, 0.));
+  gl_FragColor = max(ct + cr, 0.);
 }

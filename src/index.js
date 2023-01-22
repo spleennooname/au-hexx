@@ -2,18 +2,14 @@
 
 import './styles/styles.scss'
 
-// import Stats from 'stats.js'
-
 import vs from './glsl/vert.glsl'
 import fs from './glsl/frag.glsl'
-
-// import blends from './glsl/blend.glsl'
+import blends from './glsl/blend.glsl'
 import draws from './glsl/draw.glsl'
 
-import { dpr, invlerp } from './utils'
+import { dpr } from './utils'
 
-import { AudioFeaturesExtractor } from './AudioFeaturesExtractor'
-
+// import { AudioFeaturesExtractor } from './AudioFeaturesExtractor'
 import { getGPUTier } from 'detect-gpu'
 
 import { animationFrames, combineLatest, concat, from, tap } from 'rxjs'
@@ -21,15 +17,19 @@ import { animationFrames, combineLatest, concat, from, tap } from 'rxjs'
 import { gsap } from 'gsap'
 import * as twgl from 'twgl.js'
 
-let gl, fb0, fb1, tmp
+const isDev = import.meta.env.MODE === 'development'
+if (isDev) {
+  console.log('dev mode')
+  import('https://greggman.github.io/webgl-lint/webgl-lint.js');
+}
+
+let gl, fb0, fb1, fb2, tmp
 let positionBuffer
 
 let texture
 let programInfo
+let blendInfo
 let drawInfo
-let stream
-let audioUnif = {}
-// let blendInfo
 
 // let stats
 let gpu
@@ -37,8 +37,7 @@ let gpu
 /*   const spector = new SPECTOR.Spector()
   spector.displayUI() */
 
-const audioFeaturesExtractor = new AudioFeaturesExtractor()
-
+// const audioFeaturesExtractor = new AudioFeaturesExtractor()
 const log = document.querySelector('#log')
 const canvas = document.querySelector('#canvas')
 const cover = document.querySelector('.cover')
@@ -89,6 +88,8 @@ function init (gpuTier) {
 
   gl = twgl.getContext(canvas, { depth: false, antialiasing: true })
 
+  twgl.addExtensionsToContext(gl);
+
   texture = twgl.createTexture(gl, {
     src: '/hex.jpg',
     level: false,
@@ -98,10 +99,10 @@ function init (gpuTier) {
 
   fb0 = twgl.createFramebufferInfo(gl, null)
   fb1 = twgl.createFramebufferInfo(gl, null)
-  tmp = twgl.createFramebufferInfo(gl, null)
+  fb2 = twgl.createFramebufferInfo(gl, null)
 
   programInfo = twgl.createProgramInfo(gl, [vs, fs])
-  // blendInfo = twgl.createProgramInfo(gl, [vs, blends])
+  blendInfo = twgl.createProgramInfo(gl, [vs, blends])
   drawInfo = twgl.createProgramInfo(gl, [vs, draws])
 
   positionBuffer = twgl.createBufferInfoFromArrays(gl, {
@@ -146,16 +147,17 @@ function resizeCanvasToDisplaySize (gpu) {
   const needsResize = twgl.resizeCanvasToDisplaySize(canvas, pxr)
   if (needsResize) {
     twgl.resizeFramebufferInfo(gl, fb0, null, w, h)
-    twgl.resizeFramebufferInfo(gl, tmp, null, w, h)
     twgl.resizeFramebufferInfo(gl, fb1, null, w, h)
-
-    console.log('resize!!', w, h)
+    twgl.resizeFramebufferInfo(gl, fb2, null, w, h)
 
     let maxw = 512
+
     if (gpu.tier <= 1) {
       maxw = 512
       canvas.style.maxWidth = `${maxw}px`
-    } else if (gpu.tier <= 2) {
+    }
+
+    if (gpu.tier <= 2) {
       maxw = 800
       canvas.style.maxWidth = `${maxw}px`
     }
@@ -171,70 +173,54 @@ function resizeCanvasToDisplaySize (gpu) {
 }
 
 function draw (time) {
-  if (stream && stream.active) {
-    if (!audioFeaturesExtractor) return
-
-    const features = audioFeaturesExtractor.features([
-      'perceptualSharpness',
-      'perceptualSpread',
-      'spectralFlatness',
-      'spectralKurtosis',
-      'loudness'
-    ])
-
-    if (!features) return
-
-    const { perceptualSpread, perceptualSharpness, spectralFlatness, spectralKurtosis } = features
-
-    const loudness = invlerp(5, 30, features.loudness.total)
-    audioUnif = {
-      loudness, perceptualSharpness, perceptualSpread, spectralFlatness, spectralKurtosis
-    }
-  }
-
-  // console.log(loudness /* perceptualSpread, spectralKurtosis */)
   const uResolution = resizeCanvasToDisplaySize(gpu)
 
+  gl.disable(gl.CULL_FACE)
+  gl.disable(gl.DEPTH_TEST)
+  gl.clearColor(0, 0, 0, 1)
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
   // www.youtube.com/watch?v=rfQ8rKGTVlg#t=31m42s THXX GREGGMANN!!!
+
+  // draw new frame
   gl.useProgram(programInfo.program)
   twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer)
   twgl.setUniforms(programInfo, {
-    ...audioUnif,
     uTime: time,
     uPatternTexture: texture,
     uResolution
   })
   twgl.bindFramebufferInfo(gl, fb0)
-  twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES)
+  twgl.drawBufferInfo(gl, positionBuffer)
 
   // blend new frame with fb1 in fb2
-  /* l.useProgram(blendInfo.program)
+  gl.useProgram(blendInfo.program)
   twgl.setBuffersAndAttributes(gl, blendInfo, positionBuffer)
   twgl.setUniforms(blendInfo, {
     uTime: time,
     uResolution,
-    uPersistence: loudness,
+    uPersistence: 0.7,
     newTexture: fb0.attachments[0],
     oldTexture: fb1.attachments[0]
   })
   twgl.bindFramebufferInfo(gl, fb2)
-  twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES) */
+  twgl.drawBufferInfo(gl, positionBuffer)
 
-  // draw in canvas
+  // draw fb2 in canvas
   gl.useProgram(drawInfo.program)
   twgl.setBuffersAndAttributes(gl, drawInfo, positionBuffer)
   twgl.setUniforms(drawInfo, {
     uTime: time,
     uResolution,
-    uTexture: fb1.attachments[0]
+    uTexture: fb2.attachments[0]
   })
   twgl.bindFramebufferInfo(gl, null)
-  twgl.drawBufferInfo(gl, positionBuffer, gl.TRIANGLES)
+  twgl.drawBufferInfo(gl, positionBuffer)
 
-  // swap
-  tmp = fb0
-  fb0 = fb1
-  fb1 = tmp
+  // swap fb1, fb2
+  tmp = fb1
+  fb1 = fb2
+  fb2 = tmp
 }
 
 demo()
