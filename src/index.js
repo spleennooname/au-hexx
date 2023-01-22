@@ -181,12 +181,12 @@ function resizeCanvasToDisplaySize (gpu) {
 
     if (gpu.tier <= 1) {
       maxw = 512
+      canvas.style.maxWidth = `${maxw}px`
     } else
     if (gpu.tier <= 2) {
       maxw = 640
+      canvas.style.maxWidth = `${maxw}px`
     }
-
-    canvas.style.maxWidth = `${maxw}px`
 
     log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
       'tier: ' + gpu.tier + '<br/>' +
