@@ -12,15 +12,14 @@ import { dpr } from './utils'
 // import { AudioFeaturesExtractor } from './AudioFeaturesExtractor'
 import { getGPUTier } from 'detect-gpu'
 
-import { animationFrames, combineLatest, concat, from, tap } from 'rxjs'
+import { from, tap } from 'rxjs'
 
 import { gsap } from 'gsap'
 import * as twgl from 'twgl.js'
 
 const isDev = import.meta.env.MODE === 'development'
 if (isDev) {
-  console.log('dev mode')
-  import('https://greggman.github.io/webgl-lint/webgl-lint.js');
+  import('https://greggman.github.io/webgl-lint/webgl-lint.js')
 }
 
 let gl, fb0, fb1, fb2, tmp
@@ -34,19 +33,9 @@ let drawInfo
 // let stats
 let gpu
 
-/*   const spector = new SPECTOR.Spector()
-  spector.displayUI() */
-
-// const audioFeaturesExtractor = new AudioFeaturesExtractor()
 const log = document.querySelector('#log')
 const canvas = document.querySelector('#canvas')
 const cover = document.querySelector('.cover')
-
-/* const start$ = fromEvent(canvas, 'click')
-  .pipe(
-    debounceTime(300),
-    first()
-  ) */
 
 function demo () {
   gsap.to(cover, 5, {
@@ -55,22 +44,15 @@ function demo () {
   })
 
   try {
-    gl = canvas.getContext('webgl')
-    //
-    concat(
-      //
-      combineLatest([
-        // start$,
-        // from(audioFeaturesExtractor.meyda$({ fftSize: 512 })),
-        from(getGPUTier())
-      ])
-        .pipe(
-          tap(console.log),
-          tap(([gpu]) => init(gpu))
-        ),
-      //
-      render$()
-    )
+    gl = canvas.getContext('webgl2')
+    from(getGPUTier())
+      .pipe(
+        tap((gpu) => {
+          init(gpu)
+          run()
+          // run()//requestAnimationFrame((t) => run(t));
+        })
+      )
       .subscribe()
   } catch (err) {
     throw new Error('Error', err.toString())
@@ -87,8 +69,6 @@ function init (gpuTier) {
   console.table(gpu)
 
   gl = twgl.getContext(canvas, { depth: false, antialiasing: true })
-
-  twgl.addExtensionsToContext(gl);
 
   texture = twgl.createTexture(gl, {
     src: '/hex.jpg',
@@ -117,62 +97,23 @@ function init (gpuTier) {
   })
 }
 
-/* function run () {
-  now = window.performance.now()
-  const delta = now - then
-  if (delta > interval) {
-    then = now - (delta % interval)
-    stats.begin()
-    draw(now / 1000)
-    stats.end()
-  }
+let now = 0
+const fpsInterval = 1000 / 50
+let then = 0
+function run (time) {
   requestAnimationFrame(run)
-} */
+  // calc elapsed time since the last loop
+  now = window.performance.now()
+  const elapsed = now - then
 
-function render$ () {
-  return animationFrames()
-    .pipe(
-      tap(({ timestamp }) => draw(timestamp / 1000))
-    )
-}
-
-function resizeCanvasToDisplaySize (gpu) {
-  const pxr = gpu.tier >= 3 ? dpr : 1
-
-  const { clientHeight, clientWidth } = canvas
-
-  const w = Math.floor((clientWidth * pxr) | 0)
-  const h = Math.floor((clientHeight * pxr) | 0)
-
-  const needsResize = twgl.resizeCanvasToDisplaySize(canvas, pxr)
-  if (needsResize) {
-    twgl.resizeFramebufferInfo(gl, fb0, null, w, h)
-    twgl.resizeFramebufferInfo(gl, fb1, null, w, h)
-    twgl.resizeFramebufferInfo(gl, fb2, null, w, h)
-
-    let maxw = 512
-
-    if (gpu.tier <= 1) {
-      maxw = 512
-      canvas.style.maxWidth = `${maxw}px`
-    }
-
-    if (gpu.tier <= 2) {
-      maxw = 800
-      canvas.style.maxWidth = `${maxw}px`
-    }
-
-    log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
-      'tier: ' + gpu.tier + '<br/>' +
-      'px.ratio: ' + pxr + '<br/>' +
-      'fps: ' + gpu.fps + '<br/>' +
-      'W x H: ' + w + ' ' + h
+  // if enough time has elapsed, draw the next frame
+  if (elapsed > fpsInterval) {
+    then = now - (elapsed % fpsInterval)
+    render(now / 1000)
   }
-  // console.log('resize!!', gl.drawingBufferWidth)
-  return [w, h]
 }
 
-function draw (time) {
+function render (time) {
   const uResolution = resizeCanvasToDisplaySize(gpu)
 
   gl.disable(gl.CULL_FACE)
@@ -181,7 +122,6 @@ function draw (time) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
   // www.youtube.com/watch?v=rfQ8rKGTVlg#t=31m42s THXX GREGGMANN!!!
-
   // draw new frame
   gl.useProgram(programInfo.program)
   twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer)
@@ -221,6 +161,41 @@ function draw (time) {
   tmp = fb1
   fb1 = fb2
   fb2 = tmp
+}
+
+function resizeCanvasToDisplaySize (gpu) {
+  const pxr = gpu.tier <= 1 ? 1 : dpr
+
+  const { clientHeight, clientWidth } = canvas
+
+  const w = Math.floor((clientWidth * pxr) | 0)
+  const h = Math.floor((clientHeight * pxr) | 0)
+
+  const needsResize = twgl.resizeCanvasToDisplaySize(canvas, pxr)
+  if (needsResize) {
+    twgl.resizeFramebufferInfo(gl, fb0, null, w, h)
+    twgl.resizeFramebufferInfo(gl, fb1, null, w, h)
+    twgl.resizeFramebufferInfo(gl, fb2, null, w, h)
+
+    let maxw = 512
+
+    if (gpu.tier <= 1) {
+      maxw = 512
+    } else
+    if (gpu.tier <= 2) {
+      maxw = 640
+    }
+
+    canvas.style.maxWidth = `${maxw}px`
+
+    log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
+      'tier: ' + gpu.tier + '<br/>' +
+      'px.ratio: ' + pxr + '<br/>' +
+      'fps: ' + gpu.fps + '<br/>' +
+      'W x H: ' + w + ' ' + h
+  }
+  // console.log('resize!!', gl.drawingBufferWidth)
+  return [w, h]
 }
 
 demo()
