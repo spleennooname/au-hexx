@@ -1,201 +1,145 @@
-'use strict'
+"use strict";
 
-import './styles/styles.scss'
+import "./styles/styles.scss";
+import vs from "./glsl/vert.glsl";
+import fs from "./glsl/frag.glsl";
+import blends from "./glsl/blend.glsl";
+import draws from "./glsl/draw.glsl";
 
-import vs from './glsl/vert.glsl'
-import fs from './glsl/frag.glsl'
-import blends from './glsl/blend.glsl'
-import draws from './glsl/draw.glsl'
+import { dpr } from "./utils";
+import { getGPUTier } from "detect-gpu";
+import { gsap } from "gsap";
+import * as twgl from "twgl.js";
 
-import { dpr } from './utils'
+const isDev = import.meta.env.MODE === "development";
+let gl, fb0, fb1, fb2, tmp, positionBuffer, texture, programInfo, blendInfo, drawInfo;
+let gpuTier, canvas, log, cover;
+const fpsInterval = 1000 / 50;
+let lastRender = 0;
 
-// import { AudioFeaturesExtractor } from './AudioFeaturesExtractor'
-import { getGPUTier } from 'detect-gpu'
+async function demo() {
+  cover = document.querySelector(".cover");
+  gsap.to(cover, { delay: 1, autoAlpha: 0, duration: 5 });
 
-import { from, tap } from 'rxjs'
-
-import { gsap } from 'gsap'
-import * as twgl from 'twgl.js'
-
-const isDev = import.meta.env.MODE === 'development'
-if (isDev) {
-  import('https://greggman.github.io/webgl-lint/webgl-lint.js')
-}
-
-let gl, fb0, fb1, fb2, tmp
-let positionBuffer
-
-let texture
-let programInfo
-let blendInfo
-let drawInfo
-
-// let stats
-let gpu
-
-const log = document.querySelector('#log')
-const canvas = document.querySelector('#canvas')
-const cover = document.querySelector('.cover')
-
-function demo () {
-  gsap.to(cover, 5, {
-    delay: 1,
-    autoAlpha: 0
-  })
+  canvas = document.querySelector("#canvas");
+  log = document.querySelector("#log");
 
   try {
-    gl = canvas.getContext('webgl2')
-    from(getGPUTier())
-      .pipe(
-        tap((gpu) => {
-          init(gpu)
-          run()
-          // run()//requestAnimationFrame((t) => run(t));
-        })
-      )
-      .subscribe()
+    gl = canvas.getContext("webgl2");
+    gpuTier = await getGPUTier();
+    console.table(gpuTier);
+
+    init();
+    run();
   } catch (err) {
-    throw new Error('Error', err.toString())
+    throw new Error("Error: " + err.toString());
   }
 }
 
-function init (gpuTier) {
-  // gl.getExtension('WEBGL_lose_context').restoreContext();
-  // gl.getExtension('WEBGL_lose_context').loseContext();
-
-  gpu = gpuTier
-  // stream = mediaStream
-
-  console.table(gpu)
-
-  gl = twgl.getContext(canvas, { depth: false, antialiasing: true })
-
+function init() {
+  gl = twgl.getContext(canvas, { depth: false, antialias: true });
   texture = twgl.createTexture(gl, {
-    src: '/hex.jpg',
-    level: false,
+    src: "/hex.jpg",
     minMag: gl.LINEAR,
-    wrap: gl.REPEAT
-  })
+    wrap: gl.REPEAT,
+  });
 
-  fb0 = twgl.createFramebufferInfo(gl, null)
-  fb1 = twgl.createFramebufferInfo(gl, null)
-  fb2 = twgl.createFramebufferInfo(gl, null)
+  fb0 = twgl.createFramebufferInfo(gl);
+  fb1 = twgl.createFramebufferInfo(gl);
+  fb2 = twgl.createFramebufferInfo(gl);
 
-  programInfo = twgl.createProgramInfo(gl, [vs, fs])
-  blendInfo = twgl.createProgramInfo(gl, [vs, blends])
-  drawInfo = twgl.createProgramInfo(gl, [vs, draws])
+  programInfo = twgl.createProgramInfo(gl, [vs, fs]);
+  blendInfo = twgl.createProgramInfo(gl, [vs, blends]);
+  drawInfo = twgl.createProgramInfo(gl, [vs, draws]);
 
   positionBuffer = twgl.createBufferInfoFromArrays(gl, {
     position: {
-      data: [
-        -1, -1,
-        -1, 3,
-        3, -1
-      ],
-      numComponents: 2
-    }
-  })
+      data: [-1, -1, -1, 3, 3, -1],
+      numComponents: 2,
+    },
+  });
 }
 
-let now = 0
-const fpsInterval = 1000 / 50
-let then = 0
-function run (time) {
-  requestAnimationFrame(run)
-  // calc elapsed time since the last loop
-  now = window.performance.now()
-  const elapsed = now - then
+function run(time) {
+  requestAnimationFrame(run);
+  const now = window.performance.now();
+  const elapsed = now - lastRender;
 
-  // if enough time has elapsed, draw the next frame
   if (elapsed > fpsInterval) {
-    then = now - (elapsed % fpsInterval)
-    render(now / 1000)
+    lastRender = now - (elapsed % fpsInterval);
+    render(now / 1000);
   }
 }
 
-function render (time) {
-  const uResolution = resizeCanvasToDisplaySize(gpu)
+function render(time) {
+  const [w, h] = resizeCanvasToDisplaySize();
 
-  gl.disable(gl.CULL_FACE)
-  gl.disable(gl.DEPTH_TEST)
-  gl.clearColor(0, 0, 0, 1)
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+  gl.disable(gl.CULL_FACE);
+  gl.disable(gl.DEPTH_TEST);
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // www.youtube.com/watch?v=rfQ8rKGTVlg#t=31m42s THXX GREGGMANN!!!
-  // draw new frame
-  gl.useProgram(programInfo.program)
-  twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer)
+  // Draw new frame
+  gl.useProgram(programInfo.program);
+  twgl.setBuffersAndAttributes(gl, programInfo, positionBuffer);
   twgl.setUniforms(programInfo, {
     uTime: time,
     uPatternTexture: texture,
-    uResolution
-  })
-  twgl.bindFramebufferInfo(gl, fb0)
-  twgl.drawBufferInfo(gl, positionBuffer)
+    uResolution: [w, h],
+  });
+  twgl.bindFramebufferInfo(gl, fb0);
+  twgl.drawBufferInfo(gl, positionBuffer);
 
-  // blend new frame with fb1 in fb2
-  gl.useProgram(blendInfo.program)
-  twgl.setBuffersAndAttributes(gl, blendInfo, positionBuffer)
+  // Blend with fb1 into fb2
+  gl.useProgram(blendInfo.program);
+  twgl.setBuffersAndAttributes(gl, blendInfo, positionBuffer);
   twgl.setUniforms(blendInfo, {
     uTime: time,
-    uResolution,
+    uResolution: [w, h],
     uPersistence: 0.7,
     newTexture: fb0.attachments[0],
-    oldTexture: fb1.attachments[0]
-  })
-  twgl.bindFramebufferInfo(gl, fb2)
-  twgl.drawBufferInfo(gl, positionBuffer)
+    oldTexture: fb1.attachments[0],
+  });
+  twgl.bindFramebufferInfo(gl, fb2);
+  twgl.drawBufferInfo(gl, positionBuffer);
 
-  // draw fb2 in canvas
-  gl.useProgram(drawInfo.program)
-  twgl.setBuffersAndAttributes(gl, drawInfo, positionBuffer)
+  // Draw fb2 on canvas
+  gl.useProgram(drawInfo.program);
+  twgl.setBuffersAndAttributes(gl, drawInfo, positionBuffer);
   twgl.setUniforms(drawInfo, {
     uTime: time,
-    uResolution,
-    uTexture: fb2.attachments[0]
-  })
-  twgl.bindFramebufferInfo(gl, null)
-  twgl.drawBufferInfo(gl, positionBuffer)
+    uResolution: [w, h],
+    uTexture: fb2.attachments[0],
+  });
+  twgl.bindFramebufferInfo(gl, null);
+  twgl.drawBufferInfo(gl, positionBuffer);
 
-  // swap fb1, fb2
-  tmp = fb1
-  fb1 = fb2
-  fb2 = tmp
+  // Swap fb1 and fb2
+  [fb1, fb2] = [fb2, fb1];
 }
 
-function resizeCanvasToDisplaySize (gpu) {
-  const pxr = gpu.tier <= 1 ? 1 : dpr
+function resizeCanvasToDisplaySize() {
+  const dpr = Math.min(gpuTier.tier, window.devicePixelRatio);
 
-  const { clientHeight, clientWidth } = canvas
+  const { clientWidth: w, clientHeight: h } = canvas;
 
-  const w = Math.floor((clientWidth * pxr) | 0)
-  const h = Math.floor((clientHeight * pxr) | 0)
-
-  const needsResize = twgl.resizeCanvasToDisplaySize(canvas, pxr)
+  const needsResize = twgl.resizeCanvasToDisplaySize(canvas, dpr);
   if (needsResize) {
-    twgl.resizeFramebufferInfo(gl, fb0, null, w, h)
-    twgl.resizeFramebufferInfo(gl, fb1, null, w, h)
-    twgl.resizeFramebufferInfo(gl, fb2, null, w, h)
+    twgl.resizeFramebufferInfo(gl, fb0, null, w, h);
+    twgl.resizeFramebufferInfo(gl, fb1, null, w, h);
+    twgl.resizeFramebufferInfo(gl, fb2, null, w, h);
 
-    let maxw = 512
+    //const maxw = gpuTier.tier <= 1 ? 512 : gpuTier.tier === 2 ? 640 : canvas.clientWidth;
+    //canvas.style.maxWidth = `${maxw}px`;
 
-    if (gpu.tier <= 1) {
-      maxw = 512
-      canvas.style.maxWidth = `${maxw}px`
-    } else
-    if (gpu.tier <= 2) {
-      maxw = 640
-      canvas.style.maxWidth = `${maxw}px`
-    }
-
-    log.innerHTML = (gpu.gpu || 'n/d') + '<br/>' +
-      'tier: ' + gpu.tier + '<br/>' +
-      'px.ratio: ' + pxr + '<br/>' +
-      'fps: ' + gpu.fps + '<br/>' +
-      'W x H: ' + w + ' ' + h
+    log.innerHTML = `${gpuTier.gpu || "n/d"}<br/>
+                    Tier: ${gpuTier.tier}<br/>
+                    pxRatio: ${dpr}<br/>
+                    fps: ${gpuTier.fps || "n/a"}<br/>
+                    WxH: ${w} x ${h}`;
   }
-  // console.log('resize!!', gl.drawingBufferWidth)
-  return [w, h]
+
+  return [w, h];
 }
 
-demo()
+demo();
