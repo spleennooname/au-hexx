@@ -6,10 +6,24 @@ import glsl from 'vite-plugin-glsl'
 export default defineConfig(({ command, mode }) => {
   return {
     plugins: [
-      glsl({
-        warnDuplicatedImports: true, // Warn if the same chunk was imported multiple times
-        compress: false // the resulting shader code
-      })
-    ]
+      glsl()
+    ],
+    build: {
+      // cssCodeSplit: true,
+      minify: "esbuild",
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        input: {
+          index: "./index.html",
+        },
+        output: {
+          /* manualChunks: {
+            three: [ "three" ],
+            meyda: [ "meyda" ],
+            rxjs: [ "rxjs" ]
+          } */
+        }
+      }
+    }
   }
 })
