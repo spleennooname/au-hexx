@@ -12,10 +12,10 @@ uniform float uPersistence;
 #define time uTime
 
 void main() {
-  vec2 uv = gl_FragCoord.xy / R.xy;
-  gl_FragColor = mix( 
-    texture2D(newTexture, uv), 
-    texture2D(oldTexture, uv), 
-    uPersistence
-  );
+    vec2 uv = gl_FragCoord.xy / R.xy;
+    gl_FragColor = mix(
+            texture2D(newTexture, uv),
+            texture2D(oldTexture, uv),
+            uPersistence
+        );
 }
